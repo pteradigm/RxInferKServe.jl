@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  rxinfer-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: rxinfer-mlserver
+    ports:
+      - "8080:8080"
+    environment:
+      - JULIA_NUM_THREADS=4
+      - LOG_LEVEL=info
+    volumes:
+      - ../models:/app/models
+      - ../config:/app/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+
+  # Optional: Add MLServer container for integration
+  mlserver:
+    image: seldonio/mlserver:1.3.5
+    container_name: mlserver
+    ports:
+      - "8081:8080"
+      - "8082:8081"
+    environment:
+      - MLSERVER_MODEL_IMPLEMENTATION=rxinfer_mlserver.RxInferRuntime
+      - MLSERVER_HTTP_PORT=8080
+      - MLSERVER_GRPC_PORT=8081
+    volumes:
+      - ../python:/app/python
+      - ../models:/app/models
+    depends_on:
+      rxinfer-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Optional: Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:

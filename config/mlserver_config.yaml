@@ -1,0 +1,18 @@
+debug: false
+host: 0.0.0.0
+http_port: 8080
+grpc_port: 8081
+metrics_port: 8082
+parallel_workers: 1
+gzip_enabled: true
+
+# Custom runtime settings
+rxinfer_settings:
+  julia_project_path: "/app/RxInferMLServer.jl"
+  julia_depot_path: "/app/.julia"
+  sysimage_path: "/app/rxinfer_server.so"
+  enable_precompilation: true
+  
+# Model repository settings  
+model_repository_root: "/app/models"
+load_models_at_startup: true

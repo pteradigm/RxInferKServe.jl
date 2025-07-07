@@ -1,0 +1,101 @@
+# Julia files
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+/deps/deps.jl
+/docs/build/
+/docs/site/
+/Manifest.toml
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*~
+.*.swp
+.*.swo
+*.bak
+.vscode/
+.idea/
+
+# Python files (for MLServer integration)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# MLServer specific
+.mlserver/
+mlserver-cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+
+# Logs
+*.log
+logs/
+
+# Local configuration
+.env
+.env.local
+config/local/
+
+# Build artifacts
+*.so
+*.dylib
+*.dll
+sysimage*.so
+
+# PackageCompiler artifacts
+compiled/
+precompile_*.jl
+
+# Model artifacts
+models/checkpoints/
+models/trained/
+*.onnx
+*.pb
+*.h5
+
+# Data
+data/raw/
+data/processed/
+*.csv
+*.parquet
+*.arrow
+
+# Temporary files
+tmp/
+temp/
+*.tmp
