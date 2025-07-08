@@ -49,7 +49,7 @@ JSON3.write(json_mvnormal)
 # Test inference
 println("Precompiling inference...")
 
-data = Dict(:y => [1, 0, 1, 1, 0])
+data = Dict{Symbol,Any}(:y => [1, 0, 1, 1, 0])
 results, duration = RxInferKServe.Models.infer(instance1.id, data)
 
 # Clean up
