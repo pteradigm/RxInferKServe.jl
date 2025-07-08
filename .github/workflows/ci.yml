@@ -100,10 +100,12 @@ jobs:
       
       - uses: julia-actions/cache@v2
       
-      - name: Install JuliaFormatter
-        run: |
-          julia -e 'using Pkg; Pkg.add("JuliaFormatter")'
-      
       - name: Check formatting
         run: |
-          julia -e 'using JuliaFormatter; exit(format("."; verbose=true) ? 0 : 1)'
+          julia -e '
+            using Pkg
+            Pkg.activate(temp=true)
+            Pkg.add("JuliaFormatter")
+            using JuliaFormatter
+            exit(format("."; verbose=true) ? 0 : 1)
+          '

@@ -1,5 +1,5 @@
 # Multi-stage build for RxInferKServe
-FROM julia:1.9-bullseye AS builder
+FROM julia:1.11-bullseye AS builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -22,7 +22,7 @@ RUN julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 RUN julia --project=. scripts/build_sysimage.jl
 
 # Runtime stage
-FROM julia:1.9-bullseye
+FROM julia:1.11-bullseye
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -39,10 +39,7 @@ WORKDIR /app
 COPY --from=builder /app /app
 COPY --from=builder /root/.julia /home/rxinfer/.julia
 
-# Copy additional files
-COPY config/ ./config/
-COPY models/ ./models/
-COPY examples/ ./examples/
+# Note: Proto files are only needed for development, not runtime
 
 # Set ownership
 RUN chown -R rxinfer:rxinfer /app /home/rxinfer/.julia
@@ -57,11 +54,11 @@ ENV JULIA_SYSIMAGE=/app/rxinfer_server.so
 ENV JULIA_NUM_THREADS=auto
 
 # Expose ports
-EXPOSE 8080
+EXPOSE 8080 8081
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD julia --sysimage=$JULIA_SYSIMAGE -e 'using HTTP; HTTP.get("http://localhost:8080/v1/health")' || exit 1
+    CMD julia --sysimage=$JULIA_SYSIMAGE -e 'using HTTP; HTTP.get("http://localhost:8080/v2/health/ready")' || exit 1
 
 # Default command
-CMD ["julia", "--sysimage=/app/rxinfer_server.so", "-e", "using RxInferKServe; run_server(host=\"0.0.0.0\", port=8080)"]
+CMD ["julia", "--sysimage=/app/rxinfer_server.so", "-e", "using RxInferKServe; start_server(host=\"0.0.0.0\", port=8080)"]
