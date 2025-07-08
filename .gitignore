@@ -66,6 +66,12 @@ htmlcov/
 *.log
 logs/
 
+# Semantic Release
+.releaserc.json
+node_modules/
+package-lock.json
+package.json
+
 # Local configuration
 .env
 .env.local

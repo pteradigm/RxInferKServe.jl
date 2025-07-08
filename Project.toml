@@ -1,6 +1,6 @@
 name = "RxInferKServe"
-uuid = "12345678-1234-5678-1234-567812345678"
-authors = ["R. Bellamy <rbellamy@example.com>"]
+uuid = "61c29688-46b5-484d-8dda-4eb83d608538"
+authors = ["Richard Bellamy <rbellamy@pteradigm.com>"]
 version = "0.1.0"
 
 [deps]
