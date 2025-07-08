@@ -1,0 +1,29 @@
+# CODEOWNERS for RxInferKServe.jl
+# This file defines who is responsible for code reviews in different parts of the repository
+# These owners will be automatically requested for review when someone opens a pull request
+
+# Global owners (fallback for any file)
+* @pteradigm/maintainers
+
+# Documentation
+/docs/ @pteradigm/maintainers
+*.md @pteradigm/maintainers
+/README.md @pteradigm/maintainers
+
+# CI/CD and GitHub configuration
+/.github/ @pteradigm/maintainers
+/docker/ @pteradigm/maintainers
+
+# Core source code
+/src/ @pteradigm/maintainers
+
+# Tests
+/test/ @pteradigm/maintainers
+
+# Build configuration
+/Project.toml @pteradigm/maintainers
+/Manifest.toml @pteradigm/maintainers
+/Makefile @pteradigm/maintainers
+
+# Python client
+/python/ @pteradigm/maintainers
