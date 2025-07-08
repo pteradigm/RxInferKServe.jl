@@ -5,7 +5,7 @@
 /deps/deps.jl
 /docs/build/
 /docs/site/
-/Manifest.toml
+# Note: Manifest.toml is tracked for reproducible builds
 
 # System files
 .DS_Store
