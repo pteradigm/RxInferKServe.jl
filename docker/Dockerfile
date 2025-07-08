@@ -41,6 +41,9 @@ COPY --from=builder /root/.julia /home/rxinfer/.julia
 
 # Note: Proto files are only needed for development, not runtime
 
+# Create directories for model mounting
+RUN mkdir -p /app/models /app/config
+
 # Set ownership
 RUN chown -R rxinfer:rxinfer /app /home/rxinfer/.julia
 
@@ -52,6 +55,8 @@ ENV JULIA_PROJECT=/app
 ENV JULIA_DEPOT_PATH=/home/rxinfer/.julia
 ENV JULIA_SYSIMAGE=/app/rxinfer_server.so
 ENV JULIA_NUM_THREADS=auto
+ENV RXINFER_MODEL_PATH=/app/models
+ENV RXINFER_CONFIG_PATH=/app/config
 
 # Expose ports
 EXPOSE 8080 8081

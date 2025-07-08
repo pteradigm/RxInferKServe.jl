@@ -95,10 +95,62 @@ Configure the server using environment variables:
 
 ## Volume Mounts
 
-Mount directories for persistent data:
+### Mounting Custom Models
 
+To use custom models with the container:
+
+1. **Create a models directory** with your Julia model files:
+```bash
+mkdir -p models
+cat > models/custom_model.jl << 'EOF'
+using RxInfer
+
+@model function custom_model(x, y)
+    θ ~ Beta(1.0, 1.0)
+    σ ~ Gamma(2.0, 2.0)
+    for i in eachindex(y)
+        y[i] ~ Normal(θ * x[i], σ)
+    end
+end
+
+# Register the model on startup
+register_model("custom_model", custom_model, version="1.0.0")
+EOF
+```
+
+2. **Mount the models directory** when running the container:
 ```bash
 docker run -v $(pwd)/models:/app/models \
+           -p 8080:8080 -p 8081:8081 \
+           ghcr.io/pteradigm/rxinferkserve:latest
+```
+
+3. **Load models on startup** by setting environment variable:
+```bash
+docker run -v $(pwd)/models:/app/models \
+           -e RXINFER_LOAD_MODELS="/app/models/*.jl" \
+           -p 8080:8080 -p 8081:8081 \
+           ghcr.io/pteradigm/rxinferkserve:latest
+```
+
+### Configuration Files
+
+Mount configuration files for server settings:
+
+```bash
+docker run -v $(pwd)/config:/app/config \
+           -v $(pwd)/models:/app/models \
+           -e RXINFER_CONFIG="/app/config/server.toml" \
+           ghcr.io/pteradigm/rxinferkserve:latest
+```
+
+### Persistent Storage
+
+For production deployments with persistent model instances:
+
+```bash
+docker run -v rxinfer-data:/app/data \
+           -v $(pwd)/models:/app/models \
            -v $(pwd)/logs:/app/logs \
            ghcr.io/pteradigm/rxinferkserve:latest
 ```
