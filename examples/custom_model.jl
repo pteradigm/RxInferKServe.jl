@@ -12,23 +12,23 @@ using Distributions
     μ_global ~ Normal(0.0, 10.0)
     σ_global ~ Gamma(2.0, 2.0)
     σ_groups ~ Gamma(2.0, 2.0)
-    
+
     n_groups = length(group_data)
-    
+
     # Group-level parameters
     μ_group = randomvar(n_groups)
-    for g in 1:n_groups
+    for g = 1:n_groups
         μ_group[g] ~ Normal(μ_global, σ_global)
     end
-    
+
     # Observations
-    for g in 1:n_groups
+    for g = 1:n_groups
         n_obs = length(group_data[g])
-        for i in 1:n_obs
+        for i = 1:n_obs
             group_data[g][i] ~ Normal(μ_group[g], σ_groups)
         end
     end
-    
+
     return μ_group, μ_global, σ_global, σ_groups
 end
 
@@ -36,88 +36,88 @@ end
 @model function time_varying_regression(x, y, change_points)
     n = length(y)
     n_segments = length(change_points) + 1
-    
+
     # Parameters for each segment
     α = randomvar(n_segments)
     β = randomvar(n_segments)
     σ = randomvar(n_segments)
-    
+
     # Priors for each segment
-    for s in 1:n_segments
+    for s = 1:n_segments
         α[s] ~ Normal(0.0, 10.0)
         β[s] ~ Normal(0.0, 10.0)
         σ[s] ~ Gamma(2.0, 2.0)
     end
-    
+
     # Observations
     segment_idx = 1
-    for i in 1:n
+    for i = 1:n
         # Check if we've passed a change point
         if segment_idx < n_segments && i > change_points[segment_idx]
             segment_idx += 1
         end
-        
+
         # Use parameters for current segment
         y[i] ~ Normal(α[segment_idx] + β[segment_idx] * x[i], σ[segment_idx])
     end
-    
+
     return α, β, σ
 end
 
 # Define a mixture model
-@model function gaussian_mixture(y, n_components=2)
+@model function gaussian_mixture(y, n_components = 2)
     n = length(y)
-    
+
     # Mixture weights
     π ~ Dirichlet(ones(n_components))
-    
+
     # Component parameters
     μ = randomvar(n_components)
     σ = randomvar(n_components)
-    
-    for k in 1:n_components
+
+    for k = 1:n_components
         μ[k] ~ Normal(0.0, 10.0)
         σ[k] ~ Gamma(2.0, 2.0)
     end
-    
+
     # Latent cluster assignments
     z = randomvar(n)
-    
+
     # Observations
-    for i in 1:n
+    for i = 1:n
         z[i] ~ Categorical(π)
         y[i] ~ Normal(μ[z[i]], σ[z[i]])
     end
-    
+
     return z, μ, σ, π
 end
 
 # Start server and register models
 println("Starting server and registering custom models...")
 
-server_task = @async start_server(port=8080)
+server_task = @async start_server(port = 8080)
 sleep(2)
 
 # Register custom models
 register_model(
     "hierarchical_gaussian",
     hierarchical_gaussian,
-    version="1.0.0",
-    description="Hierarchical Gaussian model for grouped data"
+    version = "1.0.0",
+    description = "Hierarchical Gaussian model for grouped data",
 )
 
 register_model(
     "time_varying_regression",
     time_varying_regression,
-    version="1.0.0",
-    description="Regression model with time-varying parameters"
+    version = "1.0.0",
+    description = "Regression model with time-varying parameters",
 )
 
 register_model(
     "gaussian_mixture",
     gaussian_mixture,
-    version="1.0.0",
-    description="Gaussian mixture model for clustering"
+    version = "1.0.0",
+    description = "Gaussian mixture model for clustering",
 )
 
 # Create client
@@ -132,15 +132,17 @@ n_groups = 3
 group_means = [2.0, 5.0, 8.0]
 group_data = []
 
-for g in 1:n_groups
+for g = 1:n_groups
     n_obs = 20
     data = group_means[g] .+ 0.5 * randn(n_obs)
     push!(group_data, data)
 end
 
 println("Generated data for $n_groups groups")
-for g in 1:n_groups
-    println("  Group $g: mean = $(round(mean(group_data[g]), digits=2)), n = $(length(group_data[g]))")
+for g = 1:n_groups
+    println(
+        "  Group $g: mean = $(round(mean(group_data[g]), digits=2)), n = $(length(group_data[g]))",
+    )
 end
 
 # Create instance and run inference
@@ -149,14 +151,16 @@ h_result = run_inference(
     client,
     h_instance["id"],
     Dict("group_data" => group_data),
-    Dict("iterations" => 20)
+    Dict("iterations" => 20),
 )
 
 println("Inference completed in $(h_result.duration_ms)ms")
 
 # Extract global parameters
 μ_global_post = h_result.results["posteriors"][:μ_global]
-println("Global mean posterior: μ = $(round(μ_global_post["parameters"]["mean"], digits=2))")
+println(
+    "Global mean posterior: μ = $(round(μ_global_post["parameters"]["mean"], digits=2))",
+)
 
 # Example 2: Time-varying regression
 println("\nExample 2: Time-Varying Regression")
@@ -168,15 +172,11 @@ x = collect(1:n) / 10
 change_points = [40, 70]
 
 # Different parameters for each segment
-true_params = [
-    (α=1.0, β=0.5),
-    (α=3.0, β=-0.2),
-    (α=0.0, β=0.8)
-]
+true_params = [(α = 1.0, β = 0.5), (α = 3.0, β = -0.2), (α = 0.0, β = 0.8)]
 
 y = zeros(n)
 segment_idx = 1
-for i in 1:n
+for i = 1:n
     if segment_idx < length(true_params) && i > change_points[segment_idx]
         segment_idx += 1
     end
@@ -191,7 +191,7 @@ tv_result = run_inference(
     client,
     tv_instance["id"],
     Dict("x" => x, "y" => y, "change_points" => change_points),
-    Dict("iterations" => 20)
+    Dict("iterations" => 20),
 )
 
 println("Inference completed in $(tv_result.duration_ms)ms")
@@ -213,7 +213,7 @@ true_weights = [0.3, 0.7]
 # Sample from mixture
 using StatsBase
 mixture_data = Float64[]
-for i in 1:n_samples
+for i = 1:n_samples
     component = sample(1:2, Weights(true_weights))
     push!(mixture_data, true_means[component] + true_stds[component] * randn())
 end
@@ -226,7 +226,7 @@ gm_result = run_inference(
     client,
     gm_instance["id"],
     Dict("y" => mixture_data, "n_components" => 2),
-    Dict("iterations" => 30)
+    Dict("iterations" => 30),
 )
 
 println("Inference completed in $(gm_result.duration_ms)ms")

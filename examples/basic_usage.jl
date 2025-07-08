@@ -6,7 +6,7 @@ using RxInferKServe
 using RxInfer
 
 # Start the server in a separate task
-server_task = @async start_server(port=8080, log_level="info")
+server_task = @async start_server(port = 8080, log_level = "info")
 
 # Wait a moment for server to start
 sleep(2)
@@ -53,8 +53,9 @@ println("  α = $(posterior["parameters"]["alpha"])")
 println("  β = $(posterior["parameters"]["beta"])")
 
 # Calculate posterior mean
-posterior_mean = posterior["parameters"]["alpha"] / 
-                (posterior["parameters"]["alpha"] + posterior["parameters"]["beta"])
+posterior_mean =
+    posterior["parameters"]["alpha"] /
+    (posterior["parameters"]["alpha"] + posterior["parameters"]["beta"])
 println("Posterior mean: $posterior_mean")
 println()
 
@@ -78,10 +79,10 @@ println("True parameters: α=$true_α, β=$true_β")
 
 # Run inference
 lr_result = run_inference(
-    client, 
-    lr_instance["id"], 
+    client,
+    lr_instance["id"],
     Dict("x" => x_data, "y" => y_data),
-    Dict("iterations" => 20)
+    Dict("iterations" => 20),
 )
 
 println("Inference completed in $(lr_result.duration_ms)ms")
@@ -94,7 +95,7 @@ println("Posterior for α: $(α_post["type"])")
 println("  mean = $(α_post["parameters"]["mean"])")
 println("  std = $(α_post["parameters"]["std"])")
 
-println("Posterior for β: $(β_post["type"])")  
+println("Posterior for β: $(β_post["type"])")
 println("  mean = $(β_post["parameters"]["mean"])")
 println("  std = $(β_post["parameters"]["std"])")
 println()
@@ -120,12 +121,7 @@ ss_result = run_inference(
     client,
     ss_instance["id"],
     Dict("y" => observations),
-    Dict(
-        "iterations" => 10,
-        "trend" => 0.0,
-        "process_noise" => 1.0,
-        "obs_noise" => 1.0
-    )
+    Dict("iterations" => 10, "trend" => 0.0, "process_noise" => 1.0, "obs_noise" => 1.0),
 )
 
 println("Inference completed in $(ss_result.duration_ms)ms")
@@ -137,7 +133,7 @@ end
 # Clean up instances
 println("\nCleaning up...")
 delete_instance(client, instance["id"])
-delete_instance(client, lr_instance["id"]) 
+delete_instance(client, lr_instance["id"])
 delete_instance(client, ss_instance["id"])
 
 println("All instances deleted")

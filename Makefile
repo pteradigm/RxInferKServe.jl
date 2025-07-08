@@ -102,7 +102,7 @@ server-dev: build
 .PHONY: server-prod
 server-prod: sysimage
 	@echo "Starting RxInferKServe with optimized image..."
-	$(JULIA) --sysimage=rxinfer_server.so --project=. -e 'using RxInferKServe; run_server()'
+	$(JULIA) --sysimage=rxinfer_server.so --project=. -e 'using RxInferKServe; start_server()'
 
 # Run REPL with project
 .PHONY: repl
@@ -121,6 +121,13 @@ docs:
 docs-serve: docs
 	@echo "Serving documentation at http://localhost:8000"
 	cd docs/build && python3 -m http.server 8000
+
+# Format code with JuliaFormatter
+.PHONY: format
+format:
+	@echo "Formatting Julia code..."
+	@$(JULIA) -e 'using Pkg; Pkg.add("JuliaFormatter")' 2>/dev/null || true
+	@$(JULIA) -e 'using JuliaFormatter; format(".", verbose=true)'
 
 # Check Julia version
 .PHONY: check-julia

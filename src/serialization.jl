@@ -20,7 +20,7 @@ function distribution_to_json(d::Distribution)
     full_type = string(typeof(d))
     type_name = split(full_type, '.')[end]
     params = Dict{String,Any}()
-    
+
     if d isa Normal
         params["mean"] = mean(d)
         params["std"] = std(d)
@@ -39,9 +39,9 @@ function distribution_to_json(d::Distribution)
         # Generic fallback
         params["params"] = params(d)
     end
-    
+
     dims = d isa UnivariateDistribution ? nothing : length(d)
-    
+
     return DistributionJSON(type_name, params, dims)
 end
 
@@ -49,7 +49,7 @@ end
 function json_to_distribution(json::DistributionJSON)
     type_str = json.type
     params = json.parameters
-    
+
     if occursin("Normal", type_str)
         if haskey(params, "covariance")
             return MvNormal(params["mean"], params["covariance"])
@@ -74,11 +74,11 @@ JSON3.write(d::Distribution) = JSON3.write(distribution_to_json(d))
 # Serialize inference results
 function serialize_inference_results(results::Dict)
     serialized = Dict{String,Any}()
-    
+
     for (key, value) in results
         # Convert key to string if it's a Symbol
         str_key = key isa Symbol ? string(key) : key
-        
+
         if value isa Distribution
             serialized[str_key] = distribution_to_json(value)
         elseif value isa AbstractArray{<:Distribution}
@@ -88,30 +88,31 @@ function serialize_inference_results(results::Dict)
             serialized[str_key] = serialize_inference_results(value)
         elseif value isa Message
             # Handle RxInfer messages
-            serialized[str_key] = Dict(
-                "type" => "Message",
-                "data" => string(value)
-            )
+            serialized[str_key] = Dict("type" => "Message", "data" => string(value))
         else
             serialized[str_key] = value
         end
     end
-    
+
     return serialized
 end
 
 # Deserialize inference requests
 function deserialize_inference_data(data::Dict)
     deserialized = Dict{Symbol,Any}()
-    
+
     for (key, value) in data
         sym_key = Symbol(key)
-        
+
         if value isa Dict && haskey(value, "type") && haskey(value, "parameters")
             # Try to deserialize as distribution
             try
                 deserialized[sym_key] = json_to_distribution(
-                    DistributionJSON(value["type"], value["parameters"], get(value, "dimensions", nothing))
+                    DistributionJSON(
+                        value["type"],
+                        value["parameters"],
+                        get(value, "dimensions", nothing),
+                    ),
                 )
             catch
                 # If deserialization fails, keep as is
@@ -121,6 +122,6 @@ function deserialize_inference_data(data::Dict)
             deserialized[sym_key] = value
         end
     end
-    
+
     return deserialized
 end

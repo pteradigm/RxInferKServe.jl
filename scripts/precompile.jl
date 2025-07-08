@@ -13,10 +13,10 @@ println("Precompiling server components...")
 
 # Create server config
 config = RxInferKServe.ServerConfig(
-    host="127.0.0.1",
-    port=8080,
-    enable_auth=false,
-    enable_cors=true
+    host = "127.0.0.1",
+    port = 8080,
+    enable_auth = false,
+    enable_cors = true,
 )
 
 # Register models

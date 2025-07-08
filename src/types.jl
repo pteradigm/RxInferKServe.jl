@@ -43,4 +43,3 @@ StructTypes.StructType(::Type{ModelInstance}) = StructTypes.Struct()
 end
 
 StructTypes.StructType(::Type{ServerConfig}) = StructTypes.Struct()
-
