@@ -105,6 +105,13 @@ function get_model_definition(model_name::String)
     end
 end
 
+# Alias for compatibility with KServe handlers
+function get_model(model_name::String)
+    lock(GLOBAL_REGISTRY.lock) do
+        return get(GLOBAL_REGISTRY.models, model_name, nothing)
+    end
+end
+
 # List all registered models
 function list_models()
     lock(GLOBAL_REGISTRY.lock) do

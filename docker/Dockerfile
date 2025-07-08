@@ -1,4 +1,4 @@
-# Multi-stage build for RxInferMLServer
+# Multi-stage build for RxInferKServe
 FROM julia:1.9-bullseye AS builder
 
 # Install system dependencies
@@ -64,4 +64,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD julia --sysimage=$JULIA_SYSIMAGE -e 'using HTTP; HTTP.get("http://localhost:8080/v1/health")' || exit 1
 
 # Default command
-CMD ["julia", "--sysimage=/app/rxinfer_server.so", "-e", "using RxInferMLServer; run_server(host=\"0.0.0.0\", port=8080)"]
+CMD ["julia", "--sysimage=/app/rxinfer_server.so", "-e", "using RxInferKServe; run_server(host=\"0.0.0.0\", port=8080)"]

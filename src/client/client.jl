@@ -1,4 +1,4 @@
-# Julia client for RxInferMLServer
+# Julia client for RxInferKServe (KServe v2 compatible)
 
 using HTTP
 using JSON3
@@ -11,9 +11,11 @@ struct RxInferClient
 end
 
 # Constructor
-function RxInferClient(base_url::String="http://localhost:8080/v1"; 
+function RxInferClient(base_url::String="http://localhost:8080"; 
                       api_key::Union{String,Nothing}=nothing,
                       timeout::Int=30)
+    # Ensure base_url doesn't end with slash
+    base_url = rstrip(base_url, '/')
     return RxInferClient(base_url, api_key, timeout)
 end
 
@@ -28,21 +30,32 @@ function client_headers(client::RxInferClient)
     return headers
 end
 
-# Health check
+# Health check - KServe v2 liveness endpoint
 function health_check(client::RxInferClient)
     response = HTTP.get(
-        "$(client.base_url)/health",
+        "$(client.base_url)/v2/health/live",
         client_headers(client);
         timeout=client.timeout
     )
     
-    return JSON3.read(response.body, HealthResponse)
+    return JSON3.read(response.body)
+end
+
+# Server readiness check
+function ready_check(client::RxInferClient)
+    response = HTTP.get(
+        "$(client.base_url)/v2/health/ready",
+        client_headers(client);
+        timeout=client.timeout
+    )
+    
+    return JSON3.read(response.body)
 end
 
 # List available models
-function list_models(client::RxInferClient)
+function client_list_models(client::RxInferClient)
     response = HTTP.get(
-        "$(client.base_url)/models",
+        "$(client.base_url)/v2/models",
         client_headers(client);
         timeout=client.timeout
     )
@@ -50,10 +63,10 @@ function list_models(client::RxInferClient)
     return JSON3.read(response.body)
 end
 
-# List model instances
-function list_instances(client::RxInferClient)
+# Get model metadata
+function get_model_metadata(client::RxInferClient, model_name::String)
     response = HTTP.get(
-        "$(client.base_url)/models/instances",
+        "$(client.base_url)/v2/models/$(model_name)",
         client_headers(client);
         timeout=client.timeout
     )
@@ -61,57 +74,44 @@ function list_instances(client::RxInferClient)
     return JSON3.read(response.body)
 end
 
-# Create model instance
-function create_instance(client::RxInferClient, model_name::String; 
-                        initial_state::Dict{String,Any}=Dict{String,Any}())
-    body = Dict(
-        "model_name" => model_name,
-        "initial_state" => initial_state
-    )
-    
-    response = HTTP.post(
-        "$(client.base_url)/models/instances",
-        client_headers(client),
-        JSON3.write(body);
-        timeout=client.timeout
-    )
-    
-    return JSON3.read(response.body)
-end
-
-# Delete model instance
-function delete_instance(client::RxInferClient, instance_id::Union{String,UUID})
-    id_str = string(instance_id)
-    
-    response = HTTP.delete(
-        "$(client.base_url)/models/instances/$(id_str)",
+# Check if model is ready
+function is_model_ready(client::RxInferClient, model_name::String)
+    response = HTTP.get(
+        "$(client.base_url)/v2/models/$(model_name)/ready",
         client_headers(client);
         timeout=client.timeout
     )
     
-    return JSON3.read(response.body)
+    return JSON3.read(response.body)["ready"]
 end
 
-# Run inference
-function run_inference(client::RxInferClient, instance_id::Union{String,UUID}, 
-                      data::Dict; parameters::Dict=Dict(), request_id::Union{String,UUID,Nothing}=nothing)
-    id_str = string(instance_id)
+# Run inference - KServe v2 format
+function run_inference(client::RxInferClient, model_name::String,
+                      inputs::Vector{Dict{String,Any}};
+                      outputs::Union{Vector{Dict{String,Any}},Nothing}=nothing,
+                      parameters::Union{Dict{String,Any},Nothing}=nothing,
+                      id::Union{String,Nothing}=nothing)
     
-    body = Dict(
-        "data" => data,
-        "parameters" => parameters
-    )
+    body = Dict{String,Any}("inputs" => inputs)
     
-    if !isnothing(request_id)
-        body["request_id"] = string(request_id)
+    if !isnothing(outputs)
+        body["outputs"] = outputs
+    end
+    
+    if !isnothing(parameters)
+        body["parameters"] = parameters
+    end
+    
+    if !isnothing(id)
+        body["id"] = id
     end
     
     response = HTTP.post(
-        "$(client.base_url)/models/instances/$(id_str)/infer",
+        "$(client.base_url)/v2/models/$(model_name)/infer",
         client_headers(client),
         JSON3.write(body);
         timeout=client.timeout
     )
     
-    return JSON3.read(response.body, InferenceResponse)
+    return JSON3.read(response.body)
 end

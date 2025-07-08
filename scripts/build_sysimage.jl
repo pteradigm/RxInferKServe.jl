@@ -13,7 +13,7 @@ println("Building custom system image...")
 println("This may take 10-20 minutes...")
 
 create_sysimage(
-    ["RxInferMLServer", "RxInfer", "HTTP", "JSON3"],
+    ["RxInferKServe", "RxInfer", "HTTP", "JSON3"],
     sysimage_path="rxinfer_server.so",
     precompile_execution_file="scripts/precompile.jl",
     cpu_target=PackageCompiler.default_app_cpu_target(),

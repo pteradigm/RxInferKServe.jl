@@ -1,8 +1,8 @@
 """
-Basic usage example for RxInferMLServer
+Basic usage example for RxInferKServe
 """
 
-using RxInferMLServer
+using RxInferKServe
 using RxInfer
 
 # Start the server in a separate task

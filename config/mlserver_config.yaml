@@ -8,7 +8,7 @@ gzip_enabled: true
 
 # Custom runtime settings
 rxinfer_settings:
-  julia_project_path: "/app/RxInferMLServer.jl"
+  julia_project_path: "/app/RxInferKServe.jl"
   julia_depot_path: "/app/.julia"
   sysimage_path: "/app/rxinfer_server.so"
   enable_precompilation: true

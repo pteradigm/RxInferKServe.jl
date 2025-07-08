@@ -1,5 +1,5 @@
 """
-Example model definitions for RxInferMLServer
+Example model definitions for RxInferKServe
 """
 
 using RxInfer

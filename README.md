@@ -1,11 +1,12 @@
-# RxInferMLServer.jl
+# RxInferKServe.jl
 
-A Julia package for serving [RxInfer.jl](https://github.com/ReactiveBayes/RxInfer.jl) probabilistic models through REST APIs and MLServer integration.
+A Julia package for serving [RxInfer.jl](https://github.com/ReactiveBayes/RxInfer.jl) probabilistic models through KServe v2 inference protocol with both HTTP REST and gRPC endpoints.
 
 ## Features
 
-- REST API for RxInfer.jl models with OpenAPI compliance
-- MLServer custom runtime integration
+- Full KServe v2 inference protocol implementation
+- Both HTTP REST and gRPC endpoints
+- MLServer/KServe compatible runtime
 - High-performance JSON serialization of probabilistic distributions
 - Model lifecycle management with instance-based deployment
 - Built-in authentication and CORS support
@@ -16,7 +17,7 @@ A Julia package for serving [RxInfer.jl](https://github.com/ReactiveBayes/RxInfe
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/rbellamy/RxInferMLServer.jl")
+Pkg.add(url="https://github.com/rbellamy/RxInferKServe.jl")
 ```
 
 ## Quick Start
@@ -24,29 +25,29 @@ Pkg.add(url="https://github.com/rbellamy/RxInferMLServer.jl")
 ### Starting the Server
 
 ```julia
-using RxInferMLServer
+using RxInferKServe
 
 # Start server with default configuration
-start_server(host="0.0.0.0", port=8080)
+start_server(host="0.0.0.0", port=8080, grpc_port=8081)
 ```
 
 ### Using the Julia Client
 
 ```julia
-using RxInferMLServer
+using RxInferKServe.Client
 
 # Create client
-client = RxInferClient("http://localhost:8080/v1")
+client = RxInferClient("http://localhost:8080")
 
 # List available models
 models = list_models(client)
 
-# Create model instance
-instance = create_instance(client, "beta_bernoulli")
+# Get model metadata
+info = model_info(client, "beta_bernoulli")
 
-# Run inference
+# Run inference directly
 data = Dict("y" => [1, 0, 1, 1, 0, 1])
-result = run_inference(client, instance["id"], data)
+result = infer(client, "beta_bernoulli", data)
 ```
 
 ### Using the Python Client
@@ -55,11 +56,29 @@ result = run_inference(client, instance["id"], data)
 from rxinfer_client import RxInferClient
 
 # Create client
-client = RxInferClient("http://localhost:8080/v1")
+client = RxInferClient("http://localhost:8080")
 
-# Create instance and run inference
-instance = client.create_instance("beta_bernoulli")
-result = client.infer(instance.id, {"y": [1, 0, 1, 1, 0, 1]})
+# Check server status
+live = client.server_live()
+ready = client.server_ready()
+
+# List models
+models = client.list_models()
+
+# Get model metadata
+metadata = client.model_metadata("beta_bernoulli")
+
+# Run inference (simple method)
+result = client.infer_simple("beta_bernoulli", {"y": [1, 0, 1, 1, 0, 1]})
+
+# Or use full KServe v2 format
+inputs = [{
+    "name": "y",
+    "datatype": "FP64",
+    "shape": [6],
+    "data": [1.0, 0.0, 1.0, 1.0, 0.0, 1.0]
+}]
+result = client.infer("beta_bernoulli", inputs)
 ```
 
 ## Model Registration
@@ -85,12 +104,21 @@ register_model("custom_model", custom_model,
 
 ## API Endpoints
 
-- `GET /v1/health` - Health check
-- `GET /v1/models` - List available models
-- `GET /v1/models/instances` - List model instances
-- `POST /v1/models/instances` - Create model instance
-- `DELETE /v1/models/instances/{id}` - Delete instance
-- `POST /v1/models/instances/{id}/infer` - Run inference
+### HTTP REST (KServe v2)
+- `GET /v2/health/live` - Server liveness check
+- `GET /v2/health/ready` - Server readiness check  
+- `GET /v2/models` - List available models
+- `GET /v2/models/{model_name}` - Get model metadata
+- `GET /v2/models/{model_name}/ready` - Check model readiness
+- `POST /v2/models/{model_name}/infer` - Run inference
+
+### gRPC Services
+- `ServerLive` - Server liveness check
+- `ServerReady` - Server readiness check
+- `ModelReady` - Model readiness check
+- `ServerMetadata` - Server metadata
+- `ModelMetadata` - Model metadata  
+- `ModelInfer` - Run inference
 
 ## Configuration
 
@@ -100,6 +128,8 @@ Server configuration options:
 start_server(
     host="0.0.0.0",
     port=8080,
+    grpc_port=8081,
+    enable_grpc=true,
     workers=4,
     enable_auth=true,
     api_keys=["secret-key-1", "secret-key-2"],
@@ -118,7 +148,7 @@ Create a precompiled system image for fast startup:
 using PackageCompiler
 
 create_sysimage(
-    ["RxInferMLServer", "RxInfer"],
+    ["RxInferKServe", "RxInfer"],
     sysimage_path="rxinfer_server.so",
     precompile_execution_file="scripts/precompile.jl"
 )
@@ -128,31 +158,78 @@ create_sysimage(
 
 See `docker/Dockerfile` for containerized deployment example.
 
-## MLServer Integration
+## Protocol Implementation
 
-Use the provided runtime for MLServer:
+### KServe v2 Protocol
 
-```python
-# model-settings.json
-{
-    "name": "rxinfer-model",
-    "implementation": "rxinfer_mlserver.RxInferRuntime",
-    "parameters": {
-        "uri": "./models/my_model",
-        "extra": {
-            "model_name": "state_space"
-        }
-    }
-}
+RxInferKServe implements the official KServe v2 inference protocol with full gRPC and HTTP REST compatibility:
+
+- **Protobuf Definitions**: Located in `proto/kserve/v2/inference.proto` following official KServe v2 specification
+- **Generated Code**: Protobuf files generated into `src/grpc/` using ProtoBuf.jl
+- **Build System**: Use `make proto` to regenerate protobuf files after schema changes
+
+### KServe/MLServer Integration
+
+The server is fully compatible with KServe and MLServer deployments:
+
+```yaml
+# KServe InferenceService
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: rxinfer-model
+spec:
+  predictor:
+    containers:
+    - name: rxinfer-container
+      image: rxinfer-mlserver:latest
+      ports:
+      - containerPort: 8080
+        protocol: TCP
+      - containerPort: 8081
+        protocol: TCP
+      env:
+      - name: MODEL_NAME
+        value: "linear_regression"
 ```
 
 ## Development
+
+### Build System
+
+The project includes a comprehensive Makefile for development tasks:
+
+```bash
+# Install dependencies and build
+make all
+
+# Build system image for fast startup
+make sysimage
+
+# Generate protobuf files from proto definitions
+make proto
+
+# Run tests
+make test
+
+# Start development server
+make server-dev
+
+# See all available targets
+make help
+```
 
 ### Running Tests
 
 ```julia
 using Pkg
-Pkg.test("RxInferMLServer")
+Pkg.test("RxInferKServe")
+```
+
+Or using Make:
+
+```bash
+make test
 ```
 
 ### Building Documentation

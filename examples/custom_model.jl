@@ -2,7 +2,7 @@
 Example of registering and using custom RxInfer models
 """
 
-using RxInferMLServer
+using RxInferKServe
 using RxInfer
 using Distributions
 

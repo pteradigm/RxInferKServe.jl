@@ -55,12 +55,10 @@ function auth_middleware(handler)
             return HTTP.Response(
                 401,
                 ["Content-Type" => "application/json"],
-                JSON3.write(ErrorResponse(
-                    "unauthorized",
-                    "Invalid or missing API key",
-                    nothing,
-                    now(),
-                    nothing
+                JSON3.write(Dict(
+                    "error" => "unauthorized",
+                    "message" => "Invalid or missing API key",
+                    "timestamp" => now()
                 ))
             )
         end
@@ -117,12 +115,11 @@ function error_middleware(handler)
             end
             
             # Create error response
-            error_response = ErrorResponse(
-                error_type,
-                error_message,
-                Dict("stacktrace" => string(stacktrace())),
-                now(),
-                nothing
+            error_response = Dict(
+                "error" => error_type,
+                "message" => error_message,
+                "details" => Dict("stacktrace" => sprint(showerror, e, catch_backtrace())),
+                "timestamp" => now()
             )
             
             return HTTP.Response(
@@ -146,12 +143,11 @@ function size_limit_middleware(handler)
             return HTTP.Response(
                 413,
                 ["Content-Type" => "application/json"],
-                JSON3.write(ErrorResponse(
-                    "payload_too_large",
-                    "Request body exceeds maximum size of $(config.max_request_size) bytes",
-                    Dict("content_length" => content_length),
-                    now(),
-                    nothing
+                JSON3.write(Dict(
+                    "error" => "payload_too_large",
+                    "message" => "Request body exceeds maximum size of $(config.max_request_size) bytes",
+                    "details" => Dict("content_length" => content_length),
+                    "timestamp" => now()
                 ))
             )
         end

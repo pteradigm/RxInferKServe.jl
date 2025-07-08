@@ -1,4 +1,4 @@
-module RxInferMLServer
+module RxInferKServe
 
 using HTTP
 using JSON3
@@ -19,32 +19,43 @@ export
     # Models
     ModelRegistry,
     register_model,
-    create_model_instance,
-    delete_model_instance,
-    list_models,
     
-    # Inference
-    infer,
-    InferenceRequest,
-    InferenceResponse,
-    
-    # Client
+    # Client (v2 compatible)
     RxInferClient
 
 # Include submodules
 include("types.jl")
-include("serialization.jl")
-include("models/registry.jl")
-include("models/base.jl")
+
+# Serialization module
+module Serialization
+    using JSON3
+    using StructTypes
+    using Distributions
+    using RxInfer
+    include("serialization.jl")
+end
+using .Serialization
+
+# Models module
+include("models/models.jl")
+using .Models
+
+# Include KServe v2 support (needs Models and Serialization)
+include("grpc/kserve_v2.jl")
+using .KServeV2
+
+# Server modules
 include("server/config.jl")
 include("server/middleware.jl")
 include("server/handlers.jl")
 include("server/server.jl")
+
+# Client module
 include("client/client.jl")
 
 # Package initialization
 function __init__()
-    @info "RxInferMLServer.jl loaded" version=pkgversion(@__MODULE__)
+    @info "RxInferKServe.jl loaded" version=pkgversion(@__MODULE__)
 end
 
 end # module

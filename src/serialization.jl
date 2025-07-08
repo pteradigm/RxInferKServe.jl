@@ -57,7 +57,8 @@ function json_to_distribution(json::DistributionJSON)
     elseif occursin("Beta", type_str)
         return Beta(params["alpha"], params["beta"])
     elseif occursin("Gamma", type_str)
-        return Gamma(params["shape"], params["rate"])
+        # Convert rate back to scale (scale = 1/rate)
+        return Gamma(params["shape"], 1.0/params["rate"])
     elseif occursin("Categorical", type_str)
         return Categorical(params["probabilities"])
     else
@@ -73,18 +74,24 @@ function serialize_inference_results(results::Dict)
     serialized = Dict{String,Any}()
     
     for (key, value) in results
+        # Convert key to string if it's a Symbol
+        str_key = key isa Symbol ? string(key) : key
+        
         if value isa Distribution
-            serialized[key] = distribution_to_json(value)
+            serialized[str_key] = distribution_to_json(value)
         elseif value isa AbstractArray{<:Distribution}
-            serialized[key] = [distribution_to_json(d) for d in value]
+            serialized[str_key] = [distribution_to_json(d) for d in value]
+        elseif value isa Dict
+            # Recursively serialize any dict
+            serialized[str_key] = serialize_inference_results(value)
         elseif value isa Message
             # Handle RxInfer messages
-            serialized[key] = Dict(
+            serialized[str_key] = Dict(
                 "type" => "Message",
                 "data" => string(value)
             )
         else
-            serialized[key] = value
+            serialized[str_key] = value
         end
     end
     

@@ -1,5 +1,5 @@
 """
-Python client for RxInferMLServer
+Python client for RxInferKServe (KServe v2 compatible)
 """
 
 import json
@@ -10,34 +10,39 @@ import requests
 from pydantic import BaseModel, Field
 
 
+class TensorMetadata(BaseModel):
+    name: str
+    datatype: str
+    shape: List[int]
+
+
 class ModelMetadata(BaseModel):
     name: str
-    version: str
-    description: str
-    created_at: str
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    versions: List[str]
+    platform: str
+    inputs: List[TensorMetadata]
+    outputs: List[TensorMetadata]
 
 
-class ModelInstance(BaseModel):
-    id: str
-    model_name: str
-    created_at: str
-    metadata: ModelMetadata
+class InferenceRequest(BaseModel):
+    id: Optional[str] = None
+    inputs: List[Dict[str, Any]]
+    outputs: Optional[List[Dict[str, Any]]] = None
+    parameters: Optional[Dict[str, Any]] = None
 
 
 class InferenceResponse(BaseModel):
-    request_id: str
-    model_id: str
-    results: Dict[str, Any]
-    metadata: Dict[str, Any]
-    timestamp: str
-    duration_ms: float
+    model_name: str
+    model_version: Optional[str] = None
+    id: str
+    outputs: List[Dict[str, Any]]
+    parameters: Optional[Dict[str, Any]] = None
 
 
 class RxInferClient:
-    """Python client for RxInferMLServer"""
+    """Python client for RxInferKServe (KServe v2 compatible)"""
     
-    def __init__(self, base_url: str = "http://localhost:8080/v1", 
+    def __init__(self, base_url: str = "http://localhost:8080", 
                  api_key: Optional[str] = None,
                  timeout: int = 30):
         self.base_url = base_url.rstrip('/')
@@ -54,89 +59,130 @@ class RxInferClient:
         if api_key:
             self.session.headers["X-API-Key"] = api_key
     
-    def health_check(self) -> Dict[str, Any]:
-        """Check server health"""
+    def server_live(self) -> bool:
+        """Check if server is live (KServe v2)"""
         response = self.session.get(
-            f"{self.base_url}/health",
+            f"{self.base_url}/v2/health/live",
+            timeout=self.timeout
+        )
+        response.raise_for_status()
+        return response.json().get("live", False)
+    
+    def server_ready(self) -> bool:
+        """Check if server is ready (KServe v2)"""
+        response = self.session.get(
+            f"{self.base_url}/v2/health/ready",
+            timeout=self.timeout
+        )
+        response.raise_for_status()
+        return response.json().get("ready", False)
+    
+    def model_ready(self, model_name: str, model_version: Optional[str] = None) -> bool:
+        """Check if model is ready (KServe v2)"""
+        url = f"{self.base_url}/v2/models/{model_name}/ready"
+        if model_version:
+            url = f"{self.base_url}/v2/models/{model_name}/versions/{model_version}/ready"
+            
+        response = self.session.get(url, timeout=self.timeout)
+        response.raise_for_status()
+        return response.json().get("ready", False)
+    
+    def list_models(self) -> List[str]:
+        """List available models (KServe v2)"""
+        response = self.session.get(
+            f"{self.base_url}/v2/models",
             timeout=self.timeout
         )
         response.raise_for_status()
         return response.json()
     
-    def list_models(self) -> Dict[str, ModelMetadata]:
-        """List available models"""
-        response = self.session.get(
-            f"{self.base_url}/models",
-            timeout=self.timeout
-        )
+    def model_metadata(self, model_name: str, model_version: Optional[str] = None) -> ModelMetadata:
+        """Get model metadata (KServe v2)"""
+        url = f"{self.base_url}/v2/models/{model_name}"
+        if model_version:
+            url = f"{self.base_url}/v2/models/{model_name}/versions/{model_version}"
+            
+        response = self.session.get(url, timeout=self.timeout)
         response.raise_for_status()
         data = response.json()
         
-        # Convert to ModelMetadata objects
-        models = {}
-        for name, metadata in data.items():
-            models[name] = ModelMetadata(**metadata)
+        # Convert tensor metadata
+        inputs = [TensorMetadata(**inp) for inp in data.get("inputs", [])]
+        outputs = [TensorMetadata(**out) for out in data.get("outputs", [])]
         
-        return models
-    
-    def list_instances(self) -> List[Dict[str, Any]]:
-        """List model instances"""
-        response = self.session.get(
-            f"{self.base_url}/models/instances",
-            timeout=self.timeout
+        return ModelMetadata(
+            name=data["name"],
+            versions=data.get("versions", []),
+            platform=data.get("platform", "RxInfer.jl"),
+            inputs=inputs,
+            outputs=outputs
         )
-        response.raise_for_status()
-        return response.json()
     
-    def create_instance(self, model_name: str, 
-                       initial_state: Optional[Dict[str, Any]] = None) -> ModelInstance:
-        """Create a new model instance"""
-        payload = {
-            "model_name": model_name,
-            "initial_state": initial_state or {}
-        }
-        
-        response = self.session.post(
-            f"{self.base_url}/models/instances",
-            json=payload,
-            timeout=self.timeout
-        )
-        response.raise_for_status()
-        return ModelInstance(**response.json())
-    
-    def delete_instance(self, instance_id: Union[str, UUID]) -> Dict[str, Any]:
-        """Delete a model instance"""
-        instance_id = str(instance_id)
-        
-        response = self.session.delete(
-            f"{self.base_url}/models/instances/{instance_id}",
-            timeout=self.timeout
-        )
-        response.raise_for_status()
-        return response.json()
-    
-    def infer(self, instance_id: Union[str, UUID], 
-              data: Dict[str, Any],
+    def infer(self, model_name: str, 
+              inputs: List[Dict[str, Any]],
+              model_version: Optional[str] = None,
+              outputs: Optional[List[Dict[str, Any]]] = None,
               parameters: Optional[Dict[str, Any]] = None,
-              request_id: Optional[Union[str, UUID]] = None) -> InferenceResponse:
-        """Run inference on a model instance"""
-        instance_id = str(instance_id)
+              request_id: Optional[str] = None) -> InferenceResponse:
+        """Run inference on a model (KServe v2)"""
+        url = f"{self.base_url}/v2/models/{model_name}/infer"
+        if model_version:
+            url = f"{self.base_url}/v2/models/{model_name}/versions/{model_version}/infer"
         
-        payload = {
-            "data": data,
-            "parameters": parameters or {},
-        }
-        
-        if request_id:
-            payload["request_id"] = str(request_id)
+        request_data = InferenceRequest(
+            id=request_id or str(uuid4()),
+            inputs=inputs,
+            outputs=outputs,
+            parameters=parameters
+        )
         
         response = self.session.post(
-            f"{self.base_url}/models/instances/{instance_id}/infer",
-            json=payload,
+            url,
+            json=request_data.model_dump(exclude_none=True),
             timeout=self.timeout
         )
         response.raise_for_status()
         return InferenceResponse(**response.json())
+    
+    def infer_simple(self, model_name: str, 
+                    data: Dict[str, Any],
+                    model_version: Optional[str] = None,
+                    parameters: Optional[Dict[str, Any]] = None,
+                    request_id: Optional[str] = None) -> InferenceResponse:
+        """Simplified inference for single data dict (convenience method)"""
+        # Convert simple data dict to KServe tensor format
+        inputs = []
+        for name, value in data.items():
+            if isinstance(value, list):
+                inputs.append({
+                    "name": name,
+                    "datatype": "FP64",  # Default to float64
+                    "shape": [len(value)],
+                    "data": value
+                })
+            elif isinstance(value, (int, float)):
+                inputs.append({
+                    "name": name,
+                    "datatype": "FP64",
+                    "shape": [1],
+                    "data": [value]
+                })
+            else:
+                # Convert to JSON string for complex types
+                inputs.append({
+                    "name": name,
+                    "datatype": "BYTES",
+                    "shape": [1],
+                    "data": [json.dumps(value)]
+                })
+        
+        return self.infer(
+            model_name=model_name,
+            inputs=inputs,
+            model_version=model_version,
+            parameters=parameters,
+            request_id=request_id
+        )
     
     def __enter__(self):
         return self
@@ -177,23 +223,40 @@ if __name__ == "__main__":
     # Create client
     client = RxInferClient()
     
-    # Check health
-    health = client.health_check()
-    print(f"Server health: {health}")
+    # Check server status
+    live = client.server_live()
+    ready = client.server_ready()
+    print(f"Server live: {live}, ready: {ready}")
     
     # List models
     models = client.list_models()
-    print(f"Available models: {list(models.keys())}")
+    print(f"Available models: {models}")
     
-    # Create instance
-    instance = client.create_instance("beta_bernoulli")
-    print(f"Created instance: {instance.id}")
-    
-    # Run inference
-    data = {
-        "y": [1, 0, 1, 1, 0, 1, 1, 1, 0, 1]
-    }
-    
-    result = client.infer(instance.id, data)
-    print(f"Inference completed in {result.duration_ms:.2f}ms")
-    print(f"Results: {result.results}")
+    # Get model metadata
+    if models:
+        model_name = models[0]
+        metadata = client.model_metadata(model_name)
+        print(f"Model {model_name} metadata: {metadata}")
+        
+        # Check if model is ready
+        model_ready = client.model_ready(model_name)
+        print(f"Model {model_name} ready: {model_ready}")
+        
+        # Run inference using simple method
+        data = {
+            "y": [1, 0, 1, 1, 0, 1, 1, 1, 0, 1]
+        }
+        
+        result = client.infer_simple(model_name, data)
+        print(f"Inference result: {result}")
+        
+        # Or run inference using full KServe v2 format
+        inputs = [{
+            "name": "y",
+            "datatype": "FP64",
+            "shape": [10],
+            "data": [1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0]
+        }]
+        
+        result = client.infer(model_name, inputs)
+        print(f"Inference result (full format): {result}")

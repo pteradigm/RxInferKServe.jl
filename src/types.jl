@@ -1,4 +1,4 @@
-# Core type definitions for RxInferMLServer
+# Core type definitions for RxInferKServe
 
 using StructTypes
 using Dates
@@ -27,27 +27,6 @@ end
 
 StructTypes.StructType(::Type{ModelInstance}) = StructTypes.Struct()
 
-# Inference request
-struct InferenceRequest
-    model_id::UUID
-    data::Dict{String,Any}
-    parameters::Dict{String,Any}
-    request_id::Union{UUID,Nothing}
-end
-
-StructTypes.StructType(::Type{InferenceRequest}) = StructTypes.Struct()
-
-# Inference response
-struct InferenceResponse
-    request_id::UUID
-    model_id::UUID
-    results::Dict{String,Any}
-    metadata::Dict{String,Any}
-    timestamp::DateTime
-    duration_ms::Float64
-end
-
-StructTypes.StructType(::Type{InferenceResponse}) = StructTypes.Struct()
 
 # Server configuration
 @kwdef struct ServerConfig
@@ -65,24 +44,3 @@ end
 
 StructTypes.StructType(::Type{ServerConfig}) = StructTypes.Struct()
 
-# Error response
-struct ErrorResponse
-    error::String
-    message::String
-    details::Union{Dict{String,Any},Nothing}
-    timestamp::DateTime
-    request_id::Union{UUID,Nothing}
-end
-
-StructTypes.StructType(::Type{ErrorResponse}) = StructTypes.Struct()
-
-# Health check response
-struct HealthResponse
-    status::String
-    version::String
-    uptime_seconds::Float64
-    models_loaded::Int
-    timestamp::DateTime
-end
-
-StructTypes.StructType(::Type{HealthResponse}) = StructTypes.Struct()

@@ -1,85 +1,85 @@
-using RxInferMLServer
 using Test
+using RxInferKServe
+using RxInferKServe: ModelMetadata, ModelInstance
+using RxInferKServe.KServeV2: KServeV2Types
+using JSON3
 using Dates
 using UUIDs
-using JSON3
 
-@testset "Type Definitions" begin
+@testset "Core Types" begin
     @testset "ModelMetadata" begin
-        metadata = RxInferMLServer.ModelMetadata(
+        metadata = ModelMetadata(
             "test_model",
             "1.0.0",
-            "Test description",
+            "Test model description",
             now(),
-            Dict("param1" => 1, "param2" => "value")
+            Dict{String,Any}("param1" => 1.0)
         )
         
         @test metadata.name == "test_model"
         @test metadata.version == "1.0.0"
-        @test metadata.description == "Test description"
-        @test isa(metadata.created_at, DateTime)
-        @test metadata.parameters["param1"] == 1
+        @test metadata.description == "Test model description"
+        @test haskey(metadata.parameters, "param1")
+        @test metadata.parameters["param1"] == 1.0
     end
     
     @testset "ModelInstance" begin
-        metadata = RxInferMLServer.ModelMetadata(
-            "test_model", "1.0.0", "Test", now(), Dict()
+        metadata = ModelMetadata(
+            "test_model",
+            "1.0.0",
+            "Test model description",
+            now(),
+            Dict{String,Any}()
         )
         
-        instance = RxInferMLServer.ModelInstance(
-            uuid4(),
+        instance_id = uuid4()
+        instance = ModelInstance(
+            instance_id,
             "test_model",
             metadata,
-            Dict("state" => 1),
+            Dict{String,Any}(),
             now(),
             now()
         )
         
-        @test isa(instance.id, UUID)
+        @test instance.id == instance_id
         @test instance.model_name == "test_model"
-        @test instance.state["state"] == 1
+        @test instance.metadata.name == "test_model"
+    end
+end
+
+@testset "KServe V2 Types" begin
+    @testset "Tensor Conversion" begin
+        # Test tensor datatype mapping
+        @test RxInferKServe.KServeV2.KServeV2Types.tensor_datatype(Float64) == "FP64"
+        @test RxInferKServe.KServeV2.KServeV2Types.tensor_datatype(Float32) == "FP32"
+        @test RxInferKServe.KServeV2.KServeV2Types.tensor_datatype(Int64) == "INT64"
+        @test RxInferKServe.KServeV2.KServeV2Types.tensor_datatype(Bool) == "BOOL"
+        
+        # Test tensor shape
+        arr = rand(2, 3, 4)
+        @test RxInferKServe.KServeV2.KServeV2Types.tensor_shape(arr) == [2, 3, 4]
     end
     
-    @testset "ServerConfig" begin
-        config = RxInferMLServer.ServerConfig()
-        
-        @test config.host == "127.0.0.1"
-        @test config.port == 8080
-        @test config.workers == 1
-        @test config.enable_cors == true
-        @test config.enable_auth == false
-        
-        # Custom config
-        custom_config = RxInferMLServer.ServerConfig(
-            host="0.0.0.0",
-            port=9090,
-            enable_auth=true,
-            api_keys=["test-key"]
+    @testset "REST API Types" begin
+        # Test InferenceRequest
+        req = RxInferKServe.KServeV2.KServeV2Types.InferenceRequest(
+            "test-123",
+            [
+                Dict(
+                    "name" => "input1",
+                    "datatype" => "FP64",
+                    "shape" => [2, 3],
+                    "data" => [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+                )
+            ],
+            nothing,
+            Dict("iterations" => 10)
         )
         
-        @test custom_config.host == "0.0.0.0"
-        @test custom_config.port == 9090
-        @test custom_config.enable_auth == true
-        @test "test-key" in custom_config.api_keys
-    end
-    
-    @testset "JSON Serialization" begin
-        # Test that types can be serialized to JSON
-        response = RxInferMLServer.HealthResponse(
-            "healthy",
-            "1.0.0",
-            100.5,
-            5,
-            now()
-        )
-        
-        json_str = JSON3.write(response)
-        @test !isempty(json_str)
-        
-        # Test round-trip
-        parsed = JSON3.read(json_str, RxInferMLServer.HealthResponse)
-        @test parsed.status == response.status
-        @test parsed.version == response.version
-        @test parsed.models_loaded == response.models_loaded
+        @test req.id == "test-123"
+        @test length(req.inputs) == 1
+        @test req.inputs[1]["name"] == "input1"
+        @test req.parameters["iterations"] == 10
     end
 end

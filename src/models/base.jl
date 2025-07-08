@@ -3,6 +3,9 @@
 using RxInfer
 using Distributions
 
+# Import datavar for creating data placeholders
+import RxInfer: datavar, @initialization, NormalMeanVariance, GammaShapeScale, Beta
+
 # Execute inference for a model instance
 function infer(instance_id::UUID, data::Dict{Symbol,Any}; 
                iterations::Int=10, 
@@ -17,8 +20,53 @@ function infer(instance_id::UUID, data::Dict{Symbol,Any};
     start_time = time()
     
     try
-        # Create the model with provided data
-        model = model_fn(data)
+        # Get default parameters from model metadata
+        default_params = model_def["metadata"].parameters
+        
+        # Convert default parameters keys to symbols
+        default_params_symbols = Dict{Symbol,Any}(Symbol(k) => v for (k, v) in default_params)
+        
+        # Convert options keys to symbols and merge with defaults
+        # Filter out inference-specific options that shouldn't be passed to the model
+        inference_options = [:iterations, :returnvars, :free_energy]
+        options_symbols = Dict{Symbol,Any}(
+            Symbol(k) => v for (k, v) in options 
+            if Symbol(k) ∉ inference_options
+        )
+        model_params = merge(default_params_symbols, options_symbols)
+        
+        # The key insight: we need to distinguish between:
+        # 1. Observation variables (like y) that will be provided as data during inference
+        # 2. Model parameters (like trend, process_noise) that are fixed when creating the model
+        
+        # For now, we'll use a simple heuristic: if it's in the data dict, it's an observation
+        # Everything else (from model_params) is a hyperparameter
+        
+        # Build the arguments for model creation
+        model_args = Dict{Symbol,Any}()
+        
+        # Add all model parameters
+        for (k, v) in model_params
+            model_args[k] = v
+        end
+        
+        # For data variables, we don't add them to model_args
+        # Instead, we'll pass the model and data separately to infer
+        
+        # Debug: print model arguments
+        @debug "Model arguments (parameters only)" model_args
+        @debug "Data for inference" data
+        
+        # Create the model generator by calling the model function
+        # The @model macro creates a function that returns a ModelGenerator when called  
+        # We need to determine the correct arguments for the model
+        # Create the model generator by calling the function
+        # The @model macro creates a function that returns a ModelGenerator when called
+        # Call it without arguments - data will be passed separately to the infer function
+        model = model_fn()
+        
+        # Data is passed separately to infer
+        inference_data = data
         
         # Set up inference options
         inference_opts = merge(
@@ -26,14 +74,33 @@ function infer(instance_id::UUID, data::Dict{Symbol,Any};
             options
         )
         
+        # Get initialization for the model
+        init_fn = get_model_initialization(instance.model_name)
+        
+        # Get initialization for the model
+        init_fn = get_model_initialization(instance.model_name)
+        
         # Run inference
-        results = inference(
-            model = model,
-            data = data,
-            iterations = get(inference_opts, :iterations, 10),
-            returnvars = get(inference_opts, :returnvars, KeepLast()),
-            free_energy = get(inference_opts, :free_energy, false)
-        )
+        if !isnothing(init_fn)
+            # Call the initialization function to get the actual initialization
+            init = init_fn()
+            results = RxInfer.infer(
+                model = model,
+                data = inference_data,
+                iterations = get(inference_opts, :iterations, 10),
+                returnvars = get(inference_opts, :returnvars, KeepLast()),
+                free_energy = get(inference_opts, :free_energy, false),
+                initialization = init
+            )
+        else
+            results = RxInfer.infer(
+                model = model,
+                data = inference_data,
+                iterations = get(inference_opts, :iterations, 10),
+                returnvars = get(inference_opts, :returnvars, KeepLast()),
+                free_energy = get(inference_opts, :free_energy, false)
+            )
+        end
         
         # Process results
         processed_results = process_inference_results(results)
@@ -71,9 +138,16 @@ function process_inference_results(results)
             end
         end
         
-        # Extract free energy if available
+        # Extract free energy if available and computed
         if hasfield(typeof(results), :free_energy)
-            processed[:free_energy] = results.free_energy
+            try
+                fe = getfield(results, :free_energy)
+                if !isnothing(fe)
+                    processed[:free_energy] = fe
+                end
+            catch
+                # Free energy wasn't computed, skip it
+            end
         end
         
         # Extract other fields
@@ -97,16 +171,76 @@ function process_inference_results(results)
     return processed
 end
 
-# Example model definitions
-function register_builtin_models()
-    # Beta-Bernoulli model
-    @model function beta_bernoulli(y)
-        θ ~ Beta(1.0, 1.0)
-        for i in 1:length(y)
-            y[i] ~ Bernoulli(θ)
+# Get model-specific initialization
+function get_model_initialization(model_name::String)
+    if model_name == "linear_regression"
+        # Return a function that creates the initialization
+        return () -> @initialization begin
+            q(α) = NormalMeanVariance(0.0, 10.0)
+            q(β) = NormalMeanVariance(0.0, 10.0) 
+            q(σ) = GammaShapeScale(1.0, 1.0)
         end
+    elseif model_name == "simple_gaussian"
+        return () -> @initialization begin
+            q(μ) = NormalMeanVariance(0.0, 10.0)
+            q(σ) = GammaShapeScale(1.0, 1.0)
+        end
+    elseif model_name == "beta_bernoulli"
+        return () -> @initialization begin
+            q(θ) = Beta(1.0, 1.0)
+        end
+    else
+        return nothing
+    end
+end
+
+# Example model definitions
+
+# Beta-Bernoulli model
+@model function beta_bernoulli(y)
+    θ ~ Beta(1.0, 1.0)
+    for i in 1:length(y)
+        y[i] ~ Bernoulli(θ)
+    end
+end
+
+# Simple Gaussian model for testing
+@model function simple_gaussian(y)
+    μ ~ Normal(mean=0.0, variance=100.0)
+    σ ~ Gamma(shape=1.0, scale=1.0)
+    for i in 1:length(y)
+        y[i] ~ Normal(mean=μ, variance=σ)
+    end
+end
+
+# Linear regression model
+@model function linear_regression(x, y)
+    α ~ Normal(mean=0.0, variance=10.0)
+    β ~ Normal(mean=0.0, variance=10.0)
+    σ ~ Gamma(shape=1.0, scale=1.0)
+    
+    for i in 1:length(y)
+        y[i] ~ Normal(mean=α + β * x[i], variance=σ)
+    end
+end
+
+# State space model
+@model function state_space_model(y, trend, process_noise, obs_noise)
+    x = randomvar(length(y))
+    
+    x[1] ~ Normal(mean=0.0, variance=100.0)
+    y[1] ~ Normal(mean=x[1], variance=obs_noise)
+    
+    for i in 2:length(y)
+        x[i] ~ Normal(mean=x[i-1] + trend, variance=process_noise)
+        y[i] ~ Normal(mean=x[i], variance=obs_noise)
     end
     
+    return x
+end
+
+# Register built-in models
+function register_builtin_models()
     register_model(
         "beta_bernoulli",
         beta_bernoulli,
@@ -114,16 +248,12 @@ function register_builtin_models()
         description="Beta-Bernoulli conjugate model for binary data"
     )
     
-    # Linear regression model
-    @model function linear_regression(x, y)
-        α ~ Normal(0.0, 10.0)
-        β ~ Normal(0.0, 10.0)
-        σ ~ Gamma(1.0, 1.0)
-        
-        for i in 1:length(y)
-            y[i] ~ Normal(α + β * x[i], σ)
-        end
-    end
+    register_model(
+        "simple_gaussian",
+        simple_gaussian,
+        version="1.0.0",
+        description="Simple Gaussian model for single variable"
+    )
     
     register_model(
         "linear_regression",
@@ -132,27 +262,12 @@ function register_builtin_models()
         description="Bayesian linear regression model"
     )
     
-    # State space model
-    @model function state_space_model(y, trend=0.0, process_noise=1.0, obs_noise=1.0)
-        x = randomvar(length(y))
-        
-        x[1] ~ Normal(mean=0.0, variance=100.0)
-        y[1] ~ Normal(mean=x[1], variance=obs_noise)
-        
-        for i in 2:length(y)
-            x[i] ~ Normal(mean=x[i-1] + trend, variance=process_noise)
-            y[i] ~ Normal(mean=x[i], variance=obs_noise)
-        end
-        
-        return x
-    end
-    
     register_model(
         "state_space",
         state_space_model,
         version="1.0.0",
         description="Linear Gaussian state space model",
-        parameters=Dict(
+        parameters=Dict{String,Any}(
             "trend" => 0.0,
             "process_noise" => 1.0,
             "obs_noise" => 1.0
