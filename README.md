@@ -1,12 +1,12 @@
 # RxInferKServe.jl
 
-A Julia package for serving [RxInfer.jl](https://github.com/ReactiveBayes/RxInfer.jl) probabilistic models through KServe v2 inference protocol with both HTTP REST and gRPC endpoints.
+A Julia package for serving [RxInfer.jl](https://github.com/ReactiveBayes/RxInfer.jl) probabilistic models through the KServe v2 inference protocol with both HTTP REST and gRPC endpoints.
 
 ## Features
 
 - Full KServe v2 inference protocol implementation
 - Both HTTP REST and gRPC endpoints
-- MLServer/KServe compatible runtime
+- KServe v2 protocol compatible runtime
 - High-performance JSON serialization of probabilistic distributions
 - Model lifecycle management with instance-based deployment
 - Built-in authentication and CORS support
@@ -168,9 +168,9 @@ RxInferKServe implements the official KServe v2 inference protocol with full gRP
 - **Generated Code**: Protobuf files generated into `src/grpc/` using ProtoBuf.jl
 - **Build System**: Use `make proto` to regenerate protobuf files after schema changes
 
-### KServe/MLServer Integration
+### KServe Integration
 
-The server is fully compatible with KServe and MLServer deployments:
+The server is fully compatible with KServe deployments:
 
 ```yaml
 # KServe InferenceService
@@ -182,7 +182,7 @@ spec:
   predictor:
     containers:
     - name: rxinfer-container
-      image: rxinfer-mlserver:latest
+      image: rxinfer-kserve:latest
       ports:
       - containerPort: 8080
         protocol: TCP

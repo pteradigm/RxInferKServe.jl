@@ -11,6 +11,12 @@ using Logging
 using UUIDs
 using ..kserve.v2
 using ..KServeV2Types
+using ..kserve.v2: ModelMetadataResponse, ModelInferRequest, ModelInferResponse
+# Import protobuf types with their full names
+const TensorMetadata = v2.var"ModelMetadataResponse.TensorMetadata"
+const InferRequestedOutputTensor = v2.var"ModelInferRequest.InferRequestedOutputTensor"  
+const InferInputTensor = v2.var"ModelInferRequest.InferInputTensor"
+const InferOutputTensor = v2.var"ModelInferResponse.InferOutputTensor"
 using ...Models: GLOBAL_REGISTRY, get_model, create_model_instance, delete_model_instance, infer
 using ...Serialization: serialize_inference_results, deserialize_inference_data
 
@@ -64,8 +70,7 @@ function handle_model_metadata(request::ModelMetadataRequest)
         push!(inputs, TensorMetadata(
             input["name"],      # name
             input["datatype"],   # datatype
-            input["shape"],      # shape
-            Dict{String,ModelParameter}()  # parameters
+            input["shape"]       # shape
         ))
     end
     
@@ -75,8 +80,7 @@ function handle_model_metadata(request::ModelMetadataRequest)
         push!(outputs, TensorMetadata(
             output["name"],      # name
             output["datatype"],   # datatype
-            output["shape"],      # shape
-            Dict{String,ModelParameter}()  # parameters
+            output["shape"]       # shape
         ))
     end
     
@@ -85,8 +89,7 @@ function handle_model_metadata(request::ModelMetadataRequest)
         [something(request.version, "1.0.0")],      # versions
         "rxinfer",                                  # platform
         inputs,                                      # inputs
-        outputs,                                     # outputs
-        Dict{String,ModelParameter}()                # parameters
+        outputs                                      # outputs
     )
 end
 
@@ -104,8 +107,10 @@ function handle_model_infer(request::ModelInferRequest)
         data_dict = Dict{String,Any}()
         
         for input in request.inputs
-            data = convert_from_kserve_tensor(input)
-            data_dict[input.name] = data
+            if !isnothing(input.contents)
+                data = convert_from_kserve_tensor(input.contents)
+                data_dict[input.name] = data
+            end
         end
         
         # Extract parameters and convert to Symbol keys
@@ -123,14 +128,14 @@ function handle_model_infer(request::ModelInferRequest)
         )
         
         # Convert results to tensor outputs
-        outputs = InferTensorContents[]
+        outputs = InferOutputTensor[]
         
         # Handle posteriors
         if haskey(results, :posteriors)
             # Serialize the posteriors to get String keys
             serialized = serialize_inference_results(Dict(:posteriors => results[:posteriors]))
             posteriors_json = JSON3.write(serialized["posteriors"])
-            bytes_data = InferTensorContentsData(
+            bytes_data = InferTensorContents(
                 Vector{Bool}(),
                 Vector{Int32}(),
                 Vector{Int64}(),
@@ -140,28 +145,35 @@ function handle_model_infer(request::ModelInferRequest)
                 Vector{Float64}(),
                 [Vector{UInt8}(posteriors_json)]
             )
-            push!(outputs, InferTensorContents(
+            push!(outputs, InferOutputTensor(
                 "posteriors",
                 "BYTES",
                 [1],
                 Dict{String,InferParameter}(),
-                OneOf(:contents_data, bytes_data)
+                bytes_data
             ))
         end
         
         # Handle free energy
         if haskey(results, :free_energy)
-            push!(outputs, convert_to_kserve_tensor("free_energy", [results[:free_energy]]))
+            fe_contents = convert_to_kserve_tensor("free_energy", [results[:free_energy]])
+            push!(outputs, InferOutputTensor(
+                "free_energy",
+                "FP64",
+                [1],
+                Dict{String,InferParameter}(),
+                fe_contents
+            ))
         end
         
         # Create response
         ModelInferResponse(
-            model_name=request.model_name,
-            model_version=something(request.model_version, "1.0.0"),
-            id=something(request.id, string(uuid4())),
-            parameters=Dict("inference_time_ms" => InferParameter(ProtoBuf.OneOf(:double_param, duration_ms))),
-            outputs=outputs,
-            raw_output_contents=Vector{Vector{UInt8}}()
+            request.model_name,
+            something(request.model_version, "1.0.0"),
+            something(request.id, string(uuid4())),
+            Dict("inference_time_ms" => InferParameter(ProtoBuf.OneOf(:int64_param, round(Int64, duration_ms)))),
+            outputs,
+            Vector{Vector{UInt8}}()
         )
         
     finally

@@ -12,7 +12,6 @@ using ..kserve.v2: ServerLiveRequest, ServerLiveResponse, ServerReadyRequest, Se
 using ..kserve.v2: ModelReadyRequest, ModelReadyResponse, InferParameter
 using ..kserve.v2: ServerMetadataRequest, ServerMetadataResponse
 
-export KServeV2Request, KServeV2Response
 export InferenceRequest, InferenceResponse
 export MetadataRequest, MetadataResponse
 export convert_to_kserve_tensor, convert_from_kserve_tensor
@@ -191,43 +190,28 @@ end
 # Convert KServe tensor to Julia array
 function convert_from_kserve_tensor(tensor::InferTensorContents)
     # Extract the data based on which field is populated
-    if isnothing(tensor.contents)
-        error("No contents in tensor")
-    end
-    
-    # Get the actual data from OneOf
-    contents_data = if tensor.contents.name == :contents_data
-        tensor.contents.value
-    elseif tensor.contents.name == :raw_contents
-        # Handle raw bytes - would need to deserialize based on datatype
-        error("Raw contents not yet supported")
-    else
-        error("Unknown contents type")
-    end
-    
-    # Extract the appropriate field from InferTensorContentsData
-    flat_data = if !isempty(contents_data.bool_contents)
-        contents_data.bool_contents
-    elseif !isempty(contents_data.int_contents)
-        contents_data.int_contents
-    elseif !isempty(contents_data.int64_contents)
-        contents_data.int64_contents
-    elseif !isempty(contents_data.uint_contents)
-        contents_data.uint_contents
-    elseif !isempty(contents_data.uint64_contents)
-        contents_data.uint64_contents
-    elseif !isempty(contents_data.fp32_contents)
-        contents_data.fp32_contents
-    elseif !isempty(contents_data.fp64_contents)
-        contents_data.fp64_contents
-    elseif !isempty(contents_data.bytes_contents)
-        contents_data.bytes_contents
+    flat_data = if !isempty(tensor.bool_contents)
+        tensor.bool_contents
+    elseif !isempty(tensor.int_contents)
+        tensor.int_contents
+    elseif !isempty(tensor.int64_contents)
+        tensor.int64_contents
+    elseif !isempty(tensor.uint_contents)
+        tensor.uint_contents
+    elseif !isempty(tensor.uint64_contents)
+        tensor.uint64_contents
+    elseif !isempty(tensor.fp32_contents)
+        tensor.fp32_contents
+    elseif !isempty(tensor.fp64_contents)
+        tensor.fp64_contents
+    elseif !isempty(tensor.bytes_contents)
+        tensor.bytes_contents
     else
         error("No data found in tensor contents")
     end
     
-    # Reshape to original shape
-    reshape(flat_data, tuple(tensor.shape...))
+    # Return the flat data (shape information is in the parent InferInputTensor)
+    return flat_data
 end
 
 # Convert REST JSON request to protobuf types

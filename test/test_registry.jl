@@ -43,8 +43,8 @@ end
         @test GLOBAL_REGISTRY.models["test_model"]["metadata"].version == "1.0.0"
         @test GLOBAL_REGISTRY.models["test_model"]["metadata"].description == "Test model for unit tests"
         
-        # Test overwriting warning
-        @test_logs (:warn, r"Model test_model already registered") register_model("test_model", test_model)
+        # Test overwriting warning - also captures the info log
+        @test_logs (:warn, r"Model test_model already registered, overwriting") (:info, r"Registered model") register_model("test_model", test_model)
     end
     
     @testset "Model Instance Creation" begin

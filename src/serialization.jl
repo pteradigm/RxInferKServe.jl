@@ -16,7 +16,9 @@ StructTypes.StructType(::Type{DistributionJSON}) = StructTypes.Struct()
 
 # Convert distributions to JSON-serializable format
 function distribution_to_json(d::Distribution)
-    type_name = string(typeof(d))
+    # Extract the type name without module prefix
+    full_type = string(typeof(d))
+    type_name = split(full_type, '.')[end]
     params = Dict{String,Any}()
     
     if d isa Normal

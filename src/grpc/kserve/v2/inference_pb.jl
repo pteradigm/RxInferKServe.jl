@@ -11,7 +11,7 @@ export ServerLiveRequest, ServerReadyResponse, ServerMetadataRequest
 export ServerMetadataResponse, ModelReadyRequest, ModelMetadataResponse
 export var"ModelInferRequest.InferRequestedOutputTensor"
 export var"ModelInferRequest.InferInputTensor", var"ModelInferResponse.InferOutputTensor"
-export ModelInferRequest, ModelInferResponse, GRPCInferenceService
+export ModelInferRequest, ModelInferResponse
 
 
 struct ModelMetadataRequest

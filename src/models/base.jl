@@ -80,6 +80,12 @@ function infer(instance_id::UUID, data::Dict{Symbol,Any};
         # Get initialization for the model
         init_fn = get_model_initialization(instance.model_name)
         
+        # Check if we have empty data and provide appropriate defaults
+        if isempty(inference_data)
+            # For models that require data, we should error out with a clear message
+            throw(ArgumentError("Model '$(instance.model_name)' requires input data but none was provided"))
+        end
+        
         # Run inference
         if !isnothing(init_fn)
             # Call the initialization function to get the actual initialization
@@ -245,21 +251,47 @@ function register_builtin_models()
         "beta_bernoulli",
         beta_bernoulli,
         version="1.0.0",
-        description="Beta-Bernoulli conjugate model for binary data"
+        description="Beta-Bernoulli conjugate model for binary data",
+        parameters=Dict{String,Any}(
+            "inputs" => [
+                Dict("name" => "y", "datatype" => "FP64", "shape" => [-1])
+            ],
+            "outputs" => [
+                Dict("name" => "theta", "datatype" => "FP64", "shape" => [2])
+            ]
+        )
     )
     
     register_model(
         "simple_gaussian",
         simple_gaussian,
         version="1.0.0",
-        description="Simple Gaussian model for single variable"
+        description="Simple Gaussian model for single variable",
+        parameters=Dict{String,Any}(
+            "inputs" => [
+                Dict("name" => "y", "datatype" => "FP64", "shape" => [-1])
+            ],
+            "outputs" => [
+                Dict("name" => "mu", "datatype" => "FP64", "shape" => [1])
+            ]
+        )
     )
     
     register_model(
         "linear_regression",
         linear_regression,
         version="1.0.0",
-        description="Bayesian linear regression model"
+        description="Bayesian linear regression model",
+        parameters=Dict{String,Any}(
+            "inputs" => [
+                Dict("name" => "x", "datatype" => "FP64", "shape" => [-1]),
+                Dict("name" => "y", "datatype" => "FP64", "shape" => [-1])
+            ],
+            "outputs" => [
+                Dict("name" => "alpha", "datatype" => "FP64", "shape" => [1]),
+                Dict("name" => "beta", "datatype" => "FP64", "shape" => [1])
+            ]
+        )
     )
     
     register_model(
@@ -270,7 +302,13 @@ function register_builtin_models()
         parameters=Dict{String,Any}(
             "trend" => 0.0,
             "process_noise" => 1.0,
-            "obs_noise" => 1.0
+            "obs_noise" => 1.0,
+            "inputs" => [
+                Dict("name" => "y", "datatype" => "FP64", "shape" => [-1])
+            ],
+            "outputs" => [
+                Dict("name" => "states", "datatype" => "FP64", "shape" => [-1])
+            ]
         )
     )
 end
