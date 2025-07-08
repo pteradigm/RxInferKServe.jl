@@ -148,14 +148,14 @@ except Exception as e:
 ### Julia Client
 
 ```@docs
-RxInferKServe.Client.RxInferClient
-RxInferKServe.Client.server_live
-RxInferKServe.Client.server_ready
-RxInferKServe.Client.list_models
-RxInferKServe.Client.model_info
-RxInferKServe.Client.model_ready
-RxInferKServe.Client.infer
-RxInferKServe.Client.create_instance
-RxInferKServe.Client.delete_instance
-RxInferKServe.Client.infer_instance
+RxInferClient
+RxInferKServe.server_live
+RxInferKServe.server_ready
+RxInferKServe.list_models
+RxInferKServe.model_info
+RxInferKServe.model_ready
+RxInferKServe.infer
+RxInferKServe.create_instance
+RxInferKServe.delete_instance
+RxInferKServe.infer_instance
 ```
