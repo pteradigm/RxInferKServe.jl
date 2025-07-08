@@ -205,7 +205,7 @@ spec:
 
 This project uses GitHub Actions for continuous integration and deployment:
 
-- **Continuous Integration**: Tests run on Julia 1.9, 1.10, 1.11, and nightly
+- **Continuous Integration**: Tests run on Julia 1.10, 1.11, and nightly
 - **Code Coverage**: Automated coverage reporting with Codecov
 - **Semantic Versioning**: Automated releases using conventional commits
 - **Container Registry**: Docker images published to `ghcr.io/pteradigm/rxinferkserve`
