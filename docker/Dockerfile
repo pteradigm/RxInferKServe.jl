@@ -15,11 +15,15 @@ WORKDIR /app
 COPY Project.toml Manifest.toml ./
 
 # Install Julia packages (this layer will be cached if Project.toml/Manifest.toml don't change)
-RUN julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+# Note: We can't precompile yet because RxInferKServe source isn't available
+RUN julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 # Now copy the source code
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+
+# Precompile after source is available
+RUN julia --project=. -e 'using Pkg; Pkg.precompile()'
 
 # Build system image for faster startup
 RUN julia --project=. scripts/build_sysimage.jl
