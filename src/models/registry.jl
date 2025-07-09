@@ -4,6 +4,32 @@ using UUIDs
 using Dates
 using Base.Threads
 
+"""
+    ModelRegistry
+
+Registry for managing RxInfer models and their instances.
+
+# Fields
+- `models::Dict{String,Any}`: Maps model names to their definitions
+- `instances::Dict{UUID,ModelInstance}`: Maps instance IDs to model instances
+- `lock::ReentrantLock`: Thread-safe access control
+
+# Description
+The ModelRegistry provides centralized management of probabilistic models,
+allowing registration, instantiation, and lifecycle management of RxInfer models.
+
+# Example
+```julia
+# Access the global registry
+registry = RxInferKServe.GLOBAL_REGISTRY
+
+# Register a model
+register_model("my_model", my_model_function)
+
+# List registered models
+models = list_registered_models()
+```
+"""
 mutable struct ModelRegistry
     models::Dict{String,Any}  # Model name -> model definition
     instances::Dict{UUID,ModelInstance}  # Instance ID -> instance
@@ -14,7 +40,31 @@ end
 const GLOBAL_REGISTRY =
     ModelRegistry(Dict{String,Any}(), Dict{UUID,ModelInstance}(), ReentrantLock())
 
-# Register a model definition
+"""
+    register_model(name::String, model_fn::Function; version="1.0.0", description="", parameters=Dict())
+
+Register a new RxInfer model in the global registry.
+
+# Arguments
+- `name::String`: Unique name for the model
+- `model_fn::Function`: The @model function from RxInfer
+- `version::String="1.0.0"`: Model version
+- `description::String=""`: Human-readable description
+- `parameters::Dict{String,Any}=Dict()`: Default model parameters and metadata
+
+# Example
+```julia
+@model function my_model(x, y)
+    # Model definition
+end
+
+register_model("my_model", my_model, 
+    version="1.0.0",
+    description="Custom inference model",
+    parameters=Dict("learning_rate" => 0.01)
+)
+```
+"""
 function register_model(
     name::String,
     model_fn::Function;
@@ -107,11 +157,75 @@ function get_model_definition(model_name::String)
     end
 end
 
-# Alias for compatibility with KServe handlers
+"""
+    get_model(model_name::String)
+
+Get a registered model definition by name.
+
+# Arguments
+- `model_name::String`: Name of the model to retrieve
+
+# Returns
+- Model definition dictionary or `nothing` if not found
+
+# Example
+```julia
+model = get_model("linear_regression")
+```
+"""
 function get_model(model_name::String)
     lock(GLOBAL_REGISTRY.lock) do
         return get(GLOBAL_REGISTRY.models, model_name, nothing)
     end
+end
+
+"""
+    unregister_model(name::String)
+
+Remove a model from the global registry.
+
+# Arguments
+- `name::String`: Name of the model to unregister
+
+# Returns
+- `Bool`: `true` if model was removed, `false` if model was not found
+
+# Example
+```julia
+unregister_model("my_model")
+```
+"""
+function unregister_model(name::String)
+    lock(GLOBAL_REGISTRY.lock) do
+        if haskey(GLOBAL_REGISTRY.models, name)
+            delete!(GLOBAL_REGISTRY.models, name)
+            @info "Unregistered model" name=name
+            return true
+        else
+            @warn "Model not found for unregistration" name=name
+            return false
+        end
+    end
+end
+
+"""
+    list_registered_models()
+
+List all registered models with their metadata.
+
+# Returns
+- `Dict{String,Any}`: Dictionary mapping model names to their metadata
+
+# Example
+```julia
+models = list_registered_models()
+for (name, meta) in models
+    println("\$name v\$(meta["version"]): \$(meta["description"])")
+end
+```
+"""
+function list_registered_models()
+    return list_models()
 end
 
 # List all registered models

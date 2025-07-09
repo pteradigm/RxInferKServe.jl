@@ -19,6 +19,9 @@ export
     # Models
     ModelRegistry,
     register_model,
+    get_model,
+    unregister_model,
+    list_registered_models,
 
     # Client (v2 compatible)
     RxInferClient

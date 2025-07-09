@@ -102,8 +102,9 @@ Example result structure:
 ## API Reference
 
 ```@docs
+RxInferKServe.Models.ModelRegistry
 RxInferKServe.register_model
-RxInferKServe.unregister_model
+RxInferKServe.Models.unregister_model
 RxInferKServe.get_model
-RxInferKServe.list_registered_models
+RxInferKServe.Models.list_registered_models
 ```
