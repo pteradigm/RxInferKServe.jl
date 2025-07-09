@@ -33,8 +33,9 @@ This document summarizes the optimizations made to improve build times and cachi
 
 ### After
 1. **Architecture Selection**:
-   - PRs: Build only linux/amd64 (reduces build time by ~50%)
-   - Main branch: Build both architectures
+   - All builds: linux/amd64 only
+   - Rationale: Reduces build time from 3.5h to ~1h
+   - ARM support can be added later based on demand
 
 2. **Improved Layer Caching**:
    - Copy Project.toml/Manifest.toml first
@@ -43,9 +44,10 @@ This document summarizes the optimizations made to improve build times and cachi
    - Better cache reuse when only source changes
 
 ### Expected Impact
-- PR builds: ~1.5-2 hours (down from 3.5 hours)
+- All builds: ~1 hour (down from 3.5 hours) 
 - Better layer caching when dependencies don't change
 - Faster iterative development
+- Simpler CI/CD pipeline
 
 ## Additional Recommendations
 
