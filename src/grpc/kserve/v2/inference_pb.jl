@@ -18,8 +18,8 @@ struct ModelMetadataRequest
     name::String
     version::String
 end
-PB.default_values(::Type{ModelMetadataRequest}) = (;name = "", version = "")
-PB.field_numbers(::Type{ModelMetadataRequest}) = (;name = 1, version = 2)
+PB.default_values(::Type{ModelMetadataRequest}) = (; name = "", version = "")
+PB.field_numbers(::Type{ModelMetadataRequest}) = (; name = 1, version = 2)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ModelMetadataRequest})
     name = ""
@@ -74,10 +74,15 @@ struct var"ModelMetadataResponse.TensorMetadata"
     datatype::String
     shape::Vector{Int64}
 end
-PB.default_values(::Type{var"ModelMetadataResponse.TensorMetadata"}) = (;name = "", datatype = "", shape = Vector{Int64}())
-PB.field_numbers(::Type{var"ModelMetadataResponse.TensorMetadata"}) = (;name = 1, datatype = 2, shape = 3)
+PB.default_values(::Type{var"ModelMetadataResponse.TensorMetadata"}) =
+    (; name = "", datatype = "", shape = Vector{Int64}())
+PB.field_numbers(::Type{var"ModelMetadataResponse.TensorMetadata"}) =
+    (; name = 1, datatype = 2, shape = 3)
 
-function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:var"ModelMetadataResponse.TensorMetadata"})
+function PB.decode(
+    d::PB.AbstractProtoDecoder,
+    ::Type{<:var"ModelMetadataResponse.TensorMetadata"},
+)
     name = ""
     datatype = ""
     shape = PB.BufferedVector{Int64}()
@@ -115,10 +120,12 @@ struct InferParameter
     parameter_choice::Union{Nothing,OneOf{<:Union{Bool,Int64,String}}}
 end
 PB.oneof_field_types(::Type{InferParameter}) = (;
-    parameter_choice = (;bool_param=Bool, int64_param=Int64, string_param=String),
+    parameter_choice = (; bool_param = Bool, int64_param = Int64, string_param = String),
 )
-PB.default_values(::Type{InferParameter}) = (;bool_param = false, int64_param = zero(Int64), string_param = "")
-PB.field_numbers(::Type{InferParameter}) = (;bool_param = 1, int64_param = 2, string_param = 3)
+PB.default_values(::Type{InferParameter}) =
+    (; bool_param = false, int64_param = zero(Int64), string_param = "")
+PB.field_numbers(::Type{InferParameter}) =
+    (; bool_param = 1, int64_param = 2, string_param = 3)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:InferParameter})
     parameter_choice = nothing
@@ -139,7 +146,8 @@ end
 
 function PB.encode(e::PB.AbstractProtoEncoder, x::InferParameter)
     initpos = position(e.io)
-    if isnothing(x.parameter_choice);
+    if isnothing(x.parameter_choice)
+        ;
     elseif x.parameter_choice.name === :bool_param
         PB.encode(e, 1, x.parameter_choice[]::Bool)
     elseif x.parameter_choice.name === :int64_param
@@ -151,7 +159,8 @@ function PB.encode(e::PB.AbstractProtoEncoder, x::InferParameter)
 end
 function PB._encoded_size(x::InferParameter)
     encoded_size = 0
-    if isnothing(x.parameter_choice);
+    if isnothing(x.parameter_choice)
+        ;
     elseif x.parameter_choice.name === :bool_param
         encoded_size += PB._encoded_size(x.parameter_choice[]::Bool, 1)
     elseif x.parameter_choice.name === :int64_param
@@ -165,8 +174,8 @@ end
 struct ServerLiveResponse
     live::Bool
 end
-PB.default_values(::Type{ServerLiveResponse}) = (;live = false)
-PB.field_numbers(::Type{ServerLiveResponse}) = (;live = 1)
+PB.default_values(::Type{ServerLiveResponse}) = (; live = false)
+PB.field_numbers(::Type{ServerLiveResponse}) = (; live = 1)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ServerLiveResponse})
     live = false
@@ -195,8 +204,8 @@ end
 struct ModelReadyResponse
     ready::Bool
 end
-PB.default_values(::Type{ModelReadyResponse}) = (;ready = false)
-PB.field_numbers(::Type{ModelReadyResponse}) = (;ready = 1)
+PB.default_values(::Type{ModelReadyResponse}) = (; ready = false)
+PB.field_numbers(::Type{ModelReadyResponse}) = (; ready = 1)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ModelReadyResponse})
     ready = false
@@ -232,8 +241,26 @@ struct InferTensorContents
     fp64_contents::Vector{Float64}
     bytes_contents::Vector{Vector{UInt8}}
 end
-PB.default_values(::Type{InferTensorContents}) = (;bool_contents = Vector{Bool}(), int_contents = Vector{Int32}(), int64_contents = Vector{Int64}(), uint_contents = Vector{UInt32}(), uint64_contents = Vector{UInt64}(), fp32_contents = Vector{Float32}(), fp64_contents = Vector{Float64}(), bytes_contents = Vector{Vector{UInt8}}())
-PB.field_numbers(::Type{InferTensorContents}) = (;bool_contents = 1, int_contents = 2, int64_contents = 3, uint_contents = 4, uint64_contents = 5, fp32_contents = 6, fp64_contents = 7, bytes_contents = 8)
+PB.default_values(::Type{InferTensorContents}) = (;
+    bool_contents = Vector{Bool}(),
+    int_contents = Vector{Int32}(),
+    int64_contents = Vector{Int64}(),
+    uint_contents = Vector{UInt32}(),
+    uint64_contents = Vector{UInt64}(),
+    fp32_contents = Vector{Float32}(),
+    fp64_contents = Vector{Float64}(),
+    bytes_contents = Vector{Vector{UInt8}}(),
+)
+PB.field_numbers(::Type{InferTensorContents}) = (;
+    bool_contents = 1,
+    int_contents = 2,
+    int64_contents = 3,
+    uint_contents = 4,
+    uint64_contents = 5,
+    fp32_contents = 6,
+    fp64_contents = 7,
+    bytes_contents = 8,
+)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:InferTensorContents})
     bool_contents = PB.BufferedVector{Bool}()
@@ -266,7 +293,16 @@ function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:InferTensorContents})
             PB.skip(d, wire_type)
         end
     end
-    return InferTensorContents(bool_contents[], int_contents[], int64_contents[], uint_contents[], uint64_contents[], fp32_contents[], fp64_contents[], bytes_contents[])
+    return InferTensorContents(
+        bool_contents[],
+        int_contents[],
+        int64_contents[],
+        uint_contents[],
+        uint64_contents[],
+        fp32_contents[],
+        fp64_contents[],
+        bytes_contents[],
+    )
 end
 
 function PB.encode(e::PB.AbstractProtoEncoder, x::InferTensorContents)
@@ -316,8 +352,8 @@ end
 struct ServerReadyResponse
     ready::Bool
 end
-PB.default_values(::Type{ServerReadyResponse}) = (;ready = false)
-PB.field_numbers(::Type{ServerReadyResponse}) = (;ready = 1)
+PB.default_values(::Type{ServerReadyResponse}) = (; ready = false)
+PB.field_numbers(::Type{ServerReadyResponse}) = (; ready = 1)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ServerReadyResponse})
     ready = false
@@ -367,8 +403,9 @@ struct ServerMetadataResponse
     version::String
     extensions::Vector{String}
 end
-PB.default_values(::Type{ServerMetadataResponse}) = (;name = "", version = "", extensions = Vector{String}())
-PB.field_numbers(::Type{ServerMetadataResponse}) = (;name = 1, version = 2, extensions = 3)
+PB.default_values(::Type{ServerMetadataResponse}) =
+    (; name = "", version = "", extensions = Vector{String}())
+PB.field_numbers(::Type{ServerMetadataResponse}) = (; name = 1, version = 2, extensions = 3)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ServerMetadataResponse})
     name = ""
@@ -408,8 +445,8 @@ struct ModelReadyRequest
     name::String
     version::String
 end
-PB.default_values(::Type{ModelReadyRequest}) = (;name = "", version = "")
-PB.field_numbers(::Type{ModelReadyRequest}) = (;name = 1, version = 2)
+PB.default_values(::Type{ModelReadyRequest}) = (; name = "", version = "")
+PB.field_numbers(::Type{ModelReadyRequest}) = (; name = 1, version = 2)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ModelReadyRequest})
     name = ""
@@ -447,8 +484,15 @@ struct ModelMetadataResponse
     inputs::Vector{var"ModelMetadataResponse.TensorMetadata"}
     outputs::Vector{var"ModelMetadataResponse.TensorMetadata"}
 end
-PB.default_values(::Type{ModelMetadataResponse}) = (;name = "", versions = Vector{String}(), platform = "", inputs = Vector{var"ModelMetadataResponse.TensorMetadata"}(), outputs = Vector{var"ModelMetadataResponse.TensorMetadata"}())
-PB.field_numbers(::Type{ModelMetadataResponse}) = (;name = 1, versions = 2, platform = 3, inputs = 4, outputs = 5)
+PB.default_values(::Type{ModelMetadataResponse}) = (;
+    name = "",
+    versions = Vector{String}(),
+    platform = "",
+    inputs = Vector{var"ModelMetadataResponse.TensorMetadata"}(),
+    outputs = Vector{var"ModelMetadataResponse.TensorMetadata"}(),
+)
+PB.field_numbers(::Type{ModelMetadataResponse}) =
+    (; name = 1, versions = 2, platform = 3, inputs = 4, outputs = 5)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ModelMetadataResponse})
     name = ""
@@ -498,10 +542,15 @@ struct var"ModelInferRequest.InferRequestedOutputTensor"
     name::String
     parameters::Dict{String,InferParameter}
 end
-PB.default_values(::Type{var"ModelInferRequest.InferRequestedOutputTensor"}) = (;name = "", parameters = Dict{String,InferParameter}())
-PB.field_numbers(::Type{var"ModelInferRequest.InferRequestedOutputTensor"}) = (;name = 1, parameters = 2)
+PB.default_values(::Type{var"ModelInferRequest.InferRequestedOutputTensor"}) =
+    (; name = "", parameters = Dict{String,InferParameter}())
+PB.field_numbers(::Type{var"ModelInferRequest.InferRequestedOutputTensor"}) =
+    (; name = 1, parameters = 2)
 
-function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:var"ModelInferRequest.InferRequestedOutputTensor"})
+function PB.decode(
+    d::PB.AbstractProtoDecoder,
+    ::Type{<:var"ModelInferRequest.InferRequestedOutputTensor"},
+)
     name = ""
     parameters = Dict{String,InferParameter}()
     while !PB.message_done(d)
@@ -517,7 +566,10 @@ function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:var"ModelInferRequest.In
     return var"ModelInferRequest.InferRequestedOutputTensor"(name, parameters)
 end
 
-function PB.encode(e::PB.AbstractProtoEncoder, x::var"ModelInferRequest.InferRequestedOutputTensor")
+function PB.encode(
+    e::PB.AbstractProtoEncoder,
+    x::var"ModelInferRequest.InferRequestedOutputTensor",
+)
     initpos = position(e.io)
     !isempty(x.name) && PB.encode(e, 1, x.name)
     !isempty(x.parameters) && PB.encode(e, 2, x.parameters)
@@ -537,10 +589,20 @@ struct var"ModelInferRequest.InferInputTensor"
     parameters::Dict{String,InferParameter}
     contents::Union{Nothing,InferTensorContents}
 end
-PB.default_values(::Type{var"ModelInferRequest.InferInputTensor"}) = (;name = "", datatype = "", shape = Vector{Int64}(), parameters = Dict{String,InferParameter}(), contents = nothing)
-PB.field_numbers(::Type{var"ModelInferRequest.InferInputTensor"}) = (;name = 1, datatype = 2, shape = 3, parameters = 4, contents = 5)
+PB.default_values(::Type{var"ModelInferRequest.InferInputTensor"}) = (;
+    name = "",
+    datatype = "",
+    shape = Vector{Int64}(),
+    parameters = Dict{String,InferParameter}(),
+    contents = nothing,
+)
+PB.field_numbers(::Type{var"ModelInferRequest.InferInputTensor"}) =
+    (; name = 1, datatype = 2, shape = 3, parameters = 4, contents = 5)
 
-function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:var"ModelInferRequest.InferInputTensor"})
+function PB.decode(
+    d::PB.AbstractProtoDecoder,
+    ::Type{<:var"ModelInferRequest.InferInputTensor"},
+)
     name = ""
     datatype = ""
     shape = PB.BufferedVector{Int64}()
@@ -562,7 +624,13 @@ function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:var"ModelInferRequest.In
             PB.skip(d, wire_type)
         end
     end
-    return var"ModelInferRequest.InferInputTensor"(name, datatype, shape[], parameters, contents[])
+    return var"ModelInferRequest.InferInputTensor"(
+        name,
+        datatype,
+        shape[],
+        parameters,
+        contents[],
+    )
 end
 
 function PB.encode(e::PB.AbstractProtoEncoder, x::var"ModelInferRequest.InferInputTensor")
@@ -591,10 +659,20 @@ struct var"ModelInferResponse.InferOutputTensor"
     parameters::Dict{String,InferParameter}
     contents::Union{Nothing,InferTensorContents}
 end
-PB.default_values(::Type{var"ModelInferResponse.InferOutputTensor"}) = (;name = "", datatype = "", shape = Vector{Int64}(), parameters = Dict{String,InferParameter}(), contents = nothing)
-PB.field_numbers(::Type{var"ModelInferResponse.InferOutputTensor"}) = (;name = 1, datatype = 2, shape = 3, parameters = 4, contents = 5)
+PB.default_values(::Type{var"ModelInferResponse.InferOutputTensor"}) = (;
+    name = "",
+    datatype = "",
+    shape = Vector{Int64}(),
+    parameters = Dict{String,InferParameter}(),
+    contents = nothing,
+)
+PB.field_numbers(::Type{var"ModelInferResponse.InferOutputTensor"}) =
+    (; name = 1, datatype = 2, shape = 3, parameters = 4, contents = 5)
 
-function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:var"ModelInferResponse.InferOutputTensor"})
+function PB.decode(
+    d::PB.AbstractProtoDecoder,
+    ::Type{<:var"ModelInferResponse.InferOutputTensor"},
+)
     name = ""
     datatype = ""
     shape = PB.BufferedVector{Int64}()
@@ -616,7 +694,13 @@ function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:var"ModelInferResponse.I
             PB.skip(d, wire_type)
         end
     end
-    return var"ModelInferResponse.InferOutputTensor"(name, datatype, shape[], parameters, contents[])
+    return var"ModelInferResponse.InferOutputTensor"(
+        name,
+        datatype,
+        shape[],
+        parameters,
+        contents[],
+    )
 end
 
 function PB.encode(e::PB.AbstractProtoEncoder, x::var"ModelInferResponse.InferOutputTensor")
@@ -647,8 +731,24 @@ struct ModelInferRequest
     outputs::Vector{var"ModelInferRequest.InferRequestedOutputTensor"}
     raw_input_contents::Vector{Vector{UInt8}}
 end
-PB.default_values(::Type{ModelInferRequest}) = (;model_name = "", model_version = "", id = "", parameters = Dict{String,InferParameter}(), inputs = Vector{var"ModelInferRequest.InferInputTensor"}(), outputs = Vector{var"ModelInferRequest.InferRequestedOutputTensor"}(), raw_input_contents = Vector{Vector{UInt8}}())
-PB.field_numbers(::Type{ModelInferRequest}) = (;model_name = 1, model_version = 2, id = 3, parameters = 4, inputs = 5, outputs = 6, raw_input_contents = 7)
+PB.default_values(::Type{ModelInferRequest}) = (;
+    model_name = "",
+    model_version = "",
+    id = "",
+    parameters = Dict{String,InferParameter}(),
+    inputs = Vector{var"ModelInferRequest.InferInputTensor"}(),
+    outputs = Vector{var"ModelInferRequest.InferRequestedOutputTensor"}(),
+    raw_input_contents = Vector{Vector{UInt8}}(),
+)
+PB.field_numbers(::Type{ModelInferRequest}) = (;
+    model_name = 1,
+    model_version = 2,
+    id = 3,
+    parameters = 4,
+    inputs = 5,
+    outputs = 6,
+    raw_input_contents = 7,
+)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ModelInferRequest})
     model_name = ""
@@ -678,7 +778,15 @@ function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ModelInferRequest})
             PB.skip(d, wire_type)
         end
     end
-    return ModelInferRequest(model_name, model_version, id, parameters, inputs[], outputs[], raw_input_contents[])
+    return ModelInferRequest(
+        model_name,
+        model_version,
+        id,
+        parameters,
+        inputs[],
+        outputs[],
+        raw_input_contents[],
+    )
 end
 
 function PB.encode(e::PB.AbstractProtoEncoder, x::ModelInferRequest)
@@ -700,7 +808,8 @@ function PB._encoded_size(x::ModelInferRequest)
     !isempty(x.parameters) && (encoded_size += PB._encoded_size(x.parameters, 4))
     !isempty(x.inputs) && (encoded_size += PB._encoded_size(x.inputs, 5))
     !isempty(x.outputs) && (encoded_size += PB._encoded_size(x.outputs, 6))
-    !isempty(x.raw_input_contents) && (encoded_size += PB._encoded_size(x.raw_input_contents, 7))
+    !isempty(x.raw_input_contents) &&
+        (encoded_size += PB._encoded_size(x.raw_input_contents, 7))
     return encoded_size
 end
 
@@ -712,8 +821,22 @@ struct ModelInferResponse
     outputs::Vector{var"ModelInferResponse.InferOutputTensor"}
     raw_output_contents::Vector{Vector{UInt8}}
 end
-PB.default_values(::Type{ModelInferResponse}) = (;model_name = "", model_version = "", id = "", parameters = Dict{String,InferParameter}(), outputs = Vector{var"ModelInferResponse.InferOutputTensor"}(), raw_output_contents = Vector{Vector{UInt8}}())
-PB.field_numbers(::Type{ModelInferResponse}) = (;model_name = 1, model_version = 2, id = 3, parameters = 4, outputs = 5, raw_output_contents = 6)
+PB.default_values(::Type{ModelInferResponse}) = (;
+    model_name = "",
+    model_version = "",
+    id = "",
+    parameters = Dict{String,InferParameter}(),
+    outputs = Vector{var"ModelInferResponse.InferOutputTensor"}(),
+    raw_output_contents = Vector{Vector{UInt8}}(),
+)
+PB.field_numbers(::Type{ModelInferResponse}) = (;
+    model_name = 1,
+    model_version = 2,
+    id = 3,
+    parameters = 4,
+    outputs = 5,
+    raw_output_contents = 6,
+)
 
 function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ModelInferResponse})
     model_name = ""
@@ -740,7 +863,14 @@ function PB.decode(d::PB.AbstractProtoDecoder, ::Type{<:ModelInferResponse})
             PB.skip(d, wire_type)
         end
     end
-    return ModelInferResponse(model_name, model_version, id, parameters, outputs[], raw_output_contents[])
+    return ModelInferResponse(
+        model_name,
+        model_version,
+        id,
+        parameters,
+        outputs[],
+        raw_output_contents[],
+    )
 end
 
 function PB.encode(e::PB.AbstractProtoEncoder, x::ModelInferResponse)
@@ -760,7 +890,8 @@ function PB._encoded_size(x::ModelInferResponse)
     !isempty(x.id) && (encoded_size += PB._encoded_size(x.id, 3))
     !isempty(x.parameters) && (encoded_size += PB._encoded_size(x.parameters, 4))
     !isempty(x.outputs) && (encoded_size += PB._encoded_size(x.outputs, 5))
-    !isempty(x.raw_output_contents) && (encoded_size += PB._encoded_size(x.raw_output_contents, 6))
+    !isempty(x.raw_output_contents) &&
+        (encoded_size += PB._encoded_size(x.raw_output_contents, 6))
     return encoded_size
 end
 

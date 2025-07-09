@@ -1,0 +1,179 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  packages: write
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+      new_release_major_version: ${{ steps.semantic.outputs.new_release_major_version }}
+      new_release_minor_version: ${{ steps.semantic.outputs.new_release_minor_version }}
+      new_release_patch_version: ${{ steps.semantic.outputs.new_release_patch_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11'
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install semantic-release
+        run: |
+          npm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/changelog @semantic-release/exec
+      
+      - name: Create semantic-release config
+        run: |
+          cat > .releaserc.json << 'EOF'
+          {
+            "branches": ["main"],
+            "plugins": [
+              ["@semantic-release/commit-analyzer", {
+                "preset": "conventionalcommits",
+                "releaseRules": [
+                  {"type": "feat", "release": "minor"},
+                  {"type": "fix", "release": "patch"},
+                  {"type": "perf", "release": "patch"},
+                  {"type": "revert", "release": "patch"},
+                  {"type": "docs", "scope": "README", "release": "patch"},
+                  {"type": "refactor", "release": "patch"},
+                  {"type": "test", "release": false},
+                  {"type": "style", "release": false},
+                  {"type": "chore", "release": false},
+                  {"type": "ci", "release": false},
+                  {"breaking": true, "release": "major"}
+                ]
+              }],
+              ["@semantic-release/release-notes-generator", {
+                "preset": "conventionalcommits",
+                "presetConfig": {
+                  "types": [
+                    {"type": "feat", "section": "Features"},
+                    {"type": "fix", "section": "Bug Fixes"},
+                    {"type": "perf", "section": "Performance Improvements"},
+                    {"type": "revert", "section": "Reverts"},
+                    {"type": "docs", "section": "Documentation", "hidden": false},
+                    {"type": "style", "section": "Styles", "hidden": true},
+                    {"type": "chore", "section": "Miscellaneous Chores", "hidden": true},
+                    {"type": "refactor", "section": "Code Refactoring", "hidden": false},
+                    {"type": "test", "section": "Tests", "hidden": true},
+                    {"type": "build", "section": "Build System", "hidden": true},
+                    {"type": "ci", "section": "Continuous Integration", "hidden": true}
+                  ]
+                }
+              }],
+              "@semantic-release/changelog",
+              ["@semantic-release/exec", {
+                "prepareCmd": "julia -e 'using Pkg; pkg\"activate .\"; version = \"${nextRelease.version}\"; Pkg.project().version = VersionNumber(version); open(\"Project.toml\", \"w\") do io; Pkg.TOML.print(io, Pkg.project().dict); end'"
+              }],
+              ["@semantic-release/git", {
+                "assets": ["Project.toml", "CHANGELOG.md"],
+                "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+              }],
+              ["@semantic-release/github", {
+                "assets": [
+                  {"path": "rxinfer_server.so", "label": "System Image (Linux x64)", "name": "rxinfer_server-${nextRelease.version}-linux-x64.so"}
+                ]
+              }]
+            ]
+          }
+          EOF
+      
+      - name: Build system image for release
+        run: |
+          julia --project=. -e 'using Pkg; Pkg.instantiate()'
+          julia --project=. scripts/build_sysimage.jl
+      
+      - name: Run semantic release
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+        run: npx semantic-release
+
+  docker:
+    name: Build and Push Docker Image
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/pteradigm/rxinferkserve
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.release.outputs.new_release_version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.new_release_version }}
+            type=semver,pattern={{major}},value=${{ needs.release.outputs.new_release_version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.release.outputs.new_release_version }}
+
+  julia-registry:
+    name: Register Package
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11'
+      
+      - name: Register package
+        uses: julia-actions/RegisterAction@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

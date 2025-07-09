@@ -25,7 +25,7 @@ y_data = [1.0, 0.0, 1.0, 1.0, 0.0]
 println("\nTrying to create model with data...")
 try
     # Use keyword argument
-    model = model_fn(y=y_data)
+    model = model_fn(y = y_data)
     println("Model created successfully: ", typeof(model))
 catch e
     println("Error creating model: ", e)
@@ -37,10 +37,10 @@ try
     # First create an instance
     instance = create_model_instance("beta_bernoulli")
     println("Instance created: ", instance.id)
-    
+
     # Now run inference
     data = Dict(:y => y_data)
-    results, duration = RxInferKServe.Models.infer(instance.id, data; iterations=10)
+    results, duration = RxInferKServe.Models.infer(instance.id, data; iterations = 10)
     println("Inference successful!")
     println("Results: ", results)
 catch e

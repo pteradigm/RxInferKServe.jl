@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1.10'
+          - '1.11'
+          - 'nightly'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+        include:
+          - os: windows-latest
+            version: '1.11'
+            arch: x64
+          - os: macOS-latest
+            version: '1.11'
+            arch: x64
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      
+      - uses: julia-actions/cache@v2
+      
+      - uses: julia-actions/julia-buildpkg@v1
+      
+      - uses: julia-actions/julia-runtest@v1
+        env:
+          JULIA_NUM_THREADS: 2
+      
+      - uses: julia-actions/julia-processcoverage@v1
+      
+      # Upload coverage to Codecov
+      # Note: Codecov allows tokenless uploads from the default branch (main)
+      # For other branches, a token would be required
+      - uses: codecov/codecov-action@v4
+        if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
+        with:
+          file: lcov.info
+          fail_ci_if_error: false
+          verbose: true
+
+  sysimage:
+    name: Build System Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11'
+      
+      - uses: julia-actions/cache@v2
+      
+      - name: Build dependencies
+        run: |
+          julia --project=. -e 'using Pkg; Pkg.instantiate()'
+          julia --project=. -e 'using Pkg; Pkg.precompile()'
+      
+      - name: Build system image
+        run: julia --project=. scripts/build_sysimage.jl
+      
+      - name: Test system image
+        run: |
+          julia --sysimage=rxinfer_server.so --project=. -e 'using RxInferKServe; println("System image loaded successfully")'
+      
+      - name: Upload system image
+        uses: actions/upload-artifact@v4
+        with:
+          name: sysimage-ubuntu-latest
+          path: rxinfer_server.so
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11'
+      
+      - uses: julia-actions/cache@v2
+      
+      - name: Check formatting
+        run: |
+          julia -e '
+            using Pkg
+            Pkg.activate(temp=true)
+            Pkg.add("JuliaFormatter")
+            using JuliaFormatter
+            exit(format("."; verbose=true) ? 0 : 1)
+          '

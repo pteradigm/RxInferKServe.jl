@@ -1,5 +1,11 @@
 # RxInferKServe.jl
 
+[![CI](https://github.com/pteradigm/RxInferKServe.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/pteradigm/RxInferKServe.jl/actions/workflows/ci.yml)
+[![Documentation](https://github.com/pteradigm/RxInferKServe.jl/actions/workflows/docs.yml/badge.svg)](https://pteradigm.github.io/RxInferKServe.jl)
+[![codecov](https://codecov.io/gh/pteradigm/RxInferKServe.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/pteradigm/RxInferKServe.jl)
+[![Release](https://img.shields.io/github/v/release/pteradigm/RxInferKServe.jl)](https://github.com/pteradigm/RxInferKServe.jl/releases)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fpteradigm%2Frxinferkserve-blue)](https://github.com/pteradigm/RxInferKServe.jl/pkgs/container/rxinferkserve)
+
 A Julia package for serving [RxInfer.jl](https://github.com/ReactiveBayes/RxInfer.jl) probabilistic models through the KServe v2 inference protocol with both HTTP REST and gRPC endpoints.
 
 ## Features
@@ -17,7 +23,7 @@ A Julia package for serving [RxInfer.jl](https://github.com/ReactiveBayes/RxInfe
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/rbellamy/RxInferKServe.jl")
+Pkg.add(url="https://github.com/pteradigm/RxInferKServe.jl")
 ```
 
 ## Quick Start
@@ -194,6 +200,30 @@ spec:
 ```
 
 ## Development
+
+### CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **Continuous Integration**: Tests run on Julia 1.10, 1.11, and nightly
+- **Code Coverage**: Automated coverage reporting with Codecov
+- **Semantic Versioning**: Automated releases using conventional commits
+- **Container Registry**: Docker images published to `ghcr.io/pteradigm/rxinferkserve`
+- **Documentation**: Automated deployment to GitHub Pages
+- **Security Scanning**: Container vulnerability scanning with Trivy
+
+#### Commit Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/) for automatic versioning:
+
+- `feat:` - New features (minor version bump)
+- `fix:` - Bug fixes (patch version bump)
+- `docs:` - Documentation changes
+- `chore:` - Maintenance tasks
+- `test:` - Test improvements
+- `refactor:` - Code refactoring
+- `perf:` - Performance improvements
+- `BREAKING CHANGE:` - Breaking changes (major version bump)
 
 ### Build System
 

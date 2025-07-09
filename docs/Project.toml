@@ -1,0 +1,6 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+RxInferKServe = "61c29688-46b5-484d-8dda-4eb83d608538"
+
+[compat]
+Documenter = "1"

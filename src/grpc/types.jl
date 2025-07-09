@@ -8,7 +8,8 @@ using Dates
 using ProtoBuf
 using ..kserve.v2: ModelInferRequest, ModelInferResponse, InferTensorContents
 using ..kserve.v2: ModelMetadataRequest, ModelMetadataResponse
-using ..kserve.v2: ServerLiveRequest, ServerLiveResponse, ServerReadyRequest, ServerReadyResponse
+using ..kserve.v2:
+    ServerLiveRequest, ServerLiveResponse, ServerReadyRequest, ServerReadyResponse
 using ..kserve.v2: ModelReadyRequest, ModelReadyResponse, InferParameter
 using ..kserve.v2: ServerMetadataRequest, ServerMetadataResponse
 
@@ -72,7 +73,7 @@ const DATATYPE_MAP = Dict(
     "FP16" => Float16,
     "FP32" => Float32,
     "FP64" => Float64,
-    "BYTES" => Vector{UInt8}
+    "BYTES" => Vector{UInt8},
 )
 
 const JULIA_TO_DATATYPE = Dict(v => k for (k, v) in DATATYPE_MAP)
@@ -87,13 +88,13 @@ function tensor_shape(arr::AbstractArray)
 end
 
 # Convert Julia arrays to KServe tensor format
-function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=nothing)
+function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters = nothing)
     datatype = tensor_datatype(eltype(data))
     shape = tensor_shape(data)
-    
+
     # Flatten the array for transmission
     flat_data = vec(data)
-    
+
     # Create the appropriate contents based on datatype
     if datatype == "BOOL"
         InferTensorContents(
@@ -104,7 +105,7 @@ function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=
             Vector{UInt64}(),
             Vector{Float32}(),
             Vector{Float64}(),
-            Vector{Vector{UInt8}}()
+            Vector{Vector{UInt8}}(),
         )
     elseif datatype in ["INT8", "INT16", "INT32"]
         InferTensorContents(
@@ -115,7 +116,7 @@ function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=
             Vector{UInt64}(),
             Vector{Float32}(),
             Vector{Float64}(),
-            Vector{Vector{UInt8}}()
+            Vector{Vector{UInt8}}(),
         )
     elseif datatype == "INT64"
         InferTensorContents(
@@ -126,7 +127,7 @@ function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=
             Vector{UInt64}(),
             Vector{Float32}(),
             Vector{Float64}(),
-            Vector{Vector{UInt8}}()
+            Vector{Vector{UInt8}}(),
         )
     elseif datatype in ["UINT8", "UINT16", "UINT32"]
         InferTensorContents(
@@ -137,7 +138,7 @@ function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=
             Vector{UInt64}(),
             Vector{Float32}(),
             Vector{Float64}(),
-            Vector{Vector{UInt8}}()
+            Vector{Vector{UInt8}}(),
         )
     elseif datatype == "UINT64"
         InferTensorContents(
@@ -148,7 +149,7 @@ function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=
             flat_data,
             Vector{Float32}(),
             Vector{Float64}(),
-            Vector{Vector{UInt8}}()
+            Vector{Vector{UInt8}}(),
         )
     elseif datatype in ["FP16", "FP32"]
         InferTensorContents(
@@ -159,7 +160,7 @@ function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=
             Vector{UInt64}(),
             convert(Vector{Float32}, flat_data),
             Vector{Float64}(),
-            Vector{Vector{UInt8}}()
+            Vector{Vector{UInt8}}(),
         )
     elseif datatype == "FP64"
         InferTensorContents(
@@ -170,7 +171,7 @@ function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=
             Vector{UInt64}(),
             Vector{Float32}(),
             flat_data,
-            Vector{Vector{UInt8}}()
+            Vector{Vector{UInt8}}(),
         )
     else
         # Convert to bytes
@@ -182,7 +183,7 @@ function convert_to_kserve_tensor(name::String, data::AbstractArray; parameters=
             Vector{UInt64}(),
             Vector{Float32}(),
             Vector{Float64}(),
-            [Vector{UInt8}(string(x)) for x in flat_data]
+            [Vector{UInt8}(string(x)) for x in flat_data],
         )
     end
 end
@@ -209,62 +210,69 @@ function convert_from_kserve_tensor(tensor::InferTensorContents)
     else
         error("No data found in tensor contents")
     end
-    
+
     # Return the flat data (shape information is in the parent InferInputTensor)
     return flat_data
 end
 
 # Convert REST JSON request to protobuf types
-function json_to_protobuf_request(json_req::InferenceRequest, model_name::String, model_version::String="")
+function json_to_protobuf_request(
+    json_req::InferenceRequest,
+    model_name::String,
+    model_version::String = "",
+)
     inputs = InferTensorContents[]
-    
+
     for input in json_req.inputs
         name = input["name"]
         datatype = input["datatype"]
         shape = input["shape"]
         data = input["data"]
-        
+
         # Convert flat data array to appropriate type
         T = get(DATATYPE_MAP, datatype, Any)
         typed_data = convert(Vector{T}, data)
         reshaped_data = reshape(typed_data, tuple(shape...))
-        
+
         push!(inputs, convert_to_kserve_tensor(name, reshaped_data))
     end
-    
+
     ModelInferRequest(
-        model_name=model_name,
-        model_version=model_version,
-        id=something(json_req.id, ""),
-        inputs=inputs,
-        parameters=json_req.parameters
+        model_name = model_name,
+        model_version = model_version,
+        id = something(json_req.id, ""),
+        inputs = inputs,
+        parameters = json_req.parameters,
     )
 end
 
 # Convert protobuf response to REST JSON
 function protobuf_to_json_response(pb_resp::ModelInferResponse)
     outputs = Dict{String,Any}[]
-    
+
     for output in pb_resp.outputs
-        push!(outputs, Dict(
-            "name" => output.name,
-            "datatype" => output.datatype,
-            "shape" => output.shape,
-            "data" => vec(convert_from_kserve_tensor(output))
-        ))
+        push!(
+            outputs,
+            Dict(
+                "name" => output.name,
+                "datatype" => output.datatype,
+                "shape" => output.shape,
+                "data" => vec(convert_from_kserve_tensor(output)),
+            ),
+        )
     end
-    
+
     # Convert InferParameter dict to regular dict
-    params = isnothing(pb_resp.parameters) ? nothing : Dict{String,Any}(
-        k => v for (k, v) in pb_resp.parameters
-    )
-    
+    params =
+        isnothing(pb_resp.parameters) ? nothing :
+        Dict{String,Any}(k => v for (k, v) in pb_resp.parameters)
+
     InferenceResponse(
         pb_resp.model_name,
         pb_resp.model_version,
         pb_resp.id,
         outputs,
-        params
+        params,
     )
 end
 

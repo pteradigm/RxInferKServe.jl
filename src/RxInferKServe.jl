@@ -10,16 +10,16 @@ using UUIDs
 using Sockets
 
 # Export main functionality
-export 
+export
     # Server
     start_server,
     stop_server,
     ServerConfig,
-    
+
     # Models
     ModelRegistry,
     register_model,
-    
+
     # Client (v2 compatible)
     RxInferClient
 
@@ -28,11 +28,11 @@ include("types.jl")
 
 # Serialization module
 module Serialization
-    using JSON3
-    using StructTypes
-    using Distributions
-    using RxInfer
-    include("serialization.jl")
+using JSON3
+using StructTypes
+using Distributions
+using RxInfer
+include("serialization.jl")
 end
 using .Serialization
 

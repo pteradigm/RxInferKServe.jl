@@ -5,7 +5,7 @@
 /deps/deps.jl
 /docs/build/
 /docs/site/
-/Manifest.toml
+# Note: Manifest.toml is tracked for reproducible builds
 
 # System files
 .DS_Store
@@ -65,6 +65,12 @@ htmlcov/
 # Logs
 *.log
 logs/
+
+# Semantic Release
+.releaserc.json
+node_modules/
+package-lock.json
+package.json
 
 # Local configuration
 .env
