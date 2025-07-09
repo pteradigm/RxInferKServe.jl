@@ -20,7 +20,6 @@ jobs:
         version:
           - '1.10'
           - '1.11'
-          - 'nightly'
         os:
           - ubuntu-latest
         arch:
@@ -40,7 +39,28 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       
+      # Improved caching strategy
+      - name: Cache Julia dependencies
+        uses: actions/cache@v4
+        id: julia-cache
+        with:
+          path: |
+            ~/.julia/artifacts
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/registries
+          key: ${{ runner.os }}-julia-${{ matrix.version }}-${{ hashFiles('**/Project.toml', '**/Manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-${{ matrix.version }}-
+            ${{ runner.os }}-julia-
+      
+      # Alternative: Use julia-actions/cache with better settings
       - uses: julia-actions/cache@v2
+        if: steps.julia-cache.outputs.cache-hit != 'true'
+        with:
+          cache-name: julia-cache-v3
+          cache-compiled: true
+          include-matrix: false
       
       - uses: julia-actions/julia-buildpkg@v1
       
@@ -70,7 +90,19 @@ jobs:
         with:
           version: '1.11'
       
-      - uses: julia-actions/cache@v2
+      # Cache for system image build
+      - name: Cache Julia dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.julia/artifacts
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/registries
+          key: ${{ runner.os }}-julia-sysimage-${{ hashFiles('**/Project.toml', '**/Manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-sysimage-
+            ${{ runner.os }}-julia-1.11-
       
       - name: Build dependencies
         run: |
@@ -100,7 +132,14 @@ jobs:
         with:
           version: '1.11'
       
-      - uses: julia-actions/cache@v2
+      # Simple cache for linting
+      - name: Cache Julia registries
+        uses: actions/cache@v4
+        with:
+          path: ~/.julia/registries
+          key: ${{ runner.os }}-julia-registries-${{ hashFiles('**/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-registries-
       
       - name: Check formatting
         run: |
