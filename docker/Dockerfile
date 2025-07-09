@@ -10,13 +10,20 @@ RUN apt-get update && apt-get install -y \
 # Set up working directory
 WORKDIR /app
 
-# Copy project files
+# First, copy only the files needed for package installation
+# This allows Docker to cache the package installation layer
 COPY Project.toml Manifest.toml ./
+
+# Install Julia packages (this layer will be cached if Project.toml/Manifest.toml don't change)
+# Note: We can't precompile yet because RxInferKServe source isn't available
+RUN julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+# Now copy the source code
 COPY src/ ./src/
 COPY scripts/ ./scripts/
 
-# Install Julia packages
-RUN julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+# Precompile after source is available
+RUN julia --project=. -e 'using Pkg; Pkg.precompile()'
 
 # Build system image for faster startup
 RUN julia --project=. scripts/build_sysimage.jl
