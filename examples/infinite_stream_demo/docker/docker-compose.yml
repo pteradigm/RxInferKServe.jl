@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  rxinfer-server:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile
+    image: rxinfer-kserve:latest
+    container_name: rxinfer-streaming-server
+    ports:
+      - "8080:8080"  # HTTP API
+      - "8081:8081"  # gRPC API
+    environment:
+      - JULIA_NUM_THREADS=4
+      - RXINFER_LOG_LEVEL=info
+    volumes:
+      - ../server/streaming_model.jl:/app/streaming_model.jl:ro
+    command: ["julia", "--project=.", "/app/streaming_model.jl"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v2/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rxinfer-net
+
+  streaming-client:
+    build:
+      context: ../../..
+      dockerfile: examples/infinite_stream_demo/client/Dockerfile
+    image: rxinfer-streaming-client:latest
+    container_name: rxinfer-streaming-client
+    depends_on:
+      rxinfer-server:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DISPLAY=${DISPLAY:-}
+      - MPLBACKEND=Agg
+    volumes:
+      - ../client:/app:ro
+      - ./results:/app/results
+    networks:
+      - rxinfer-net
+    stdin_open: true
+    tty: true
+    command: ["python", "streaming_client.py"]
+
+networks:
+  rxinfer-net:
+    driver: bridge
+
+volumes:
+  results:
