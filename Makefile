@@ -162,6 +162,75 @@ docker-run:
 	@echo "Running Docker container..."
 	docker run -p 8080:8080 -p 8081:8081 rxinfer-mlserver:latest
 
+# Infinite stream demo targets
+.PHONY: demo-stream
+demo-stream:
+	@echo "Starting infinite stream demo..."
+	cd examples/infinite_stream_demo/docker && podman-compose up --build
+
+.PHONY: demo-stream-build
+demo-stream-build:
+	@echo "Building infinite stream demo containers..."
+	cd examples/infinite_stream_demo/docker && podman-compose build
+
+.PHONY: demo-stream-up
+demo-stream-up:
+	@echo "Starting infinite stream demo (detached)..."
+	cd examples/infinite_stream_demo/docker && podman-compose up -d
+
+.PHONY: demo-stream-down
+demo-stream-down:
+	@echo "Stopping infinite stream demo..."
+	cd examples/infinite_stream_demo/docker && podman-compose down
+
+.PHONY: demo-stream-logs
+demo-stream-logs:
+	@echo "Showing infinite stream demo logs..."
+	cd examples/infinite_stream_demo/docker && podman-compose logs -f
+
+.PHONY: demo-stream-status
+demo-stream-status:
+	@echo "Checking infinite stream demo status..."
+	@cd examples/infinite_stream_demo/docker && \
+	if podman-compose ps | grep -q "rxinfer-streaming-server.*Up" && \
+	   podman-compose ps | grep -q "rxinfer-streaming-client.*Up"; then \
+		echo "✓ Demo containers are running"; \
+		if curl -sf http://localhost:8080/v2/health/live > /dev/null; then \
+			echo "✓ Server is healthy"; \
+			echo "✓ DEMO IS RUNNING SUCCESSFULLY"; \
+		else \
+			echo "✗ Server health check failed"; \
+		fi \
+	else \
+		echo "✗ Demo containers are not running"; \
+		echo "Run 'make demo-stream' to start"; \
+	fi
+
+.PHONY: demo-stream-test
+demo-stream-test: demo-stream-build
+	@echo "Testing infinite stream demo..."
+	@cd examples/infinite_stream_demo/docker && \
+	podman-compose up -d rxinfer-server && \
+	sleep 10 && \
+	if podman-compose exec rxinfer-server curl -f http://localhost:8080/v2/health/live; then \
+		echo "✓ Server test passed"; \
+		podman-compose run --rm streaming-client python -c "\
+import sys; sys.path.append('/app'); \
+from streaming_client import RxInferStreamingClient; \
+client = RxInferStreamingClient('rxinfer-server:8081'); \
+if client.check_server_live(): print('✓ gRPC connection successful'); \
+else: sys.exit(1)"; \
+	else \
+		echo "✗ Server test failed"; \
+		podman-compose logs rxinfer-server; \
+	fi && \
+	podman-compose down
+
+.PHONY: demo-stream-proto
+demo-stream-proto:
+	@echo "Generating Python protobuf files for streaming demo..."
+	cd examples/infinite_stream_demo/client && ./generate_proto.sh
+
 # Help target
 .PHONY: help
 help:
@@ -191,9 +260,23 @@ help:
 	@echo "  release      - Create a release build"
 	@echo "  docker-build - Build Docker image"
 	@echo "  docker-run   - Run Docker container"
+	@echo ""
+	@echo "Infinite Stream Demo:"
+	@echo "  demo-stream       - Run the infinite stream demo"
+	@echo "  demo-stream-build - Build demo containers"
+	@echo "  demo-stream-up    - Start demo (detached)"
+	@echo "  demo-stream-down  - Stop demo"
+	@echo "  demo-stream-logs  - View demo logs"
+	@echo "  demo-stream-status- Check demo status"
+	@echo "  demo-stream-test  - Run demo tests"
+	@echo "  demo-stream-proto - Generate Python protobuf files"
+	@echo ""
 	@echo "  help         - Show this help message"
 
 # Declare all targets as PHONY to ensure they always run
 .PHONY: all deps update build sysimage proto test test-file lint format \
         clean distclean server server-dev server-prod repl docs docs-serve \
-        check-julia bench release docker-build docker-run help
+        check-julia bench release docker-build docker-run \
+        demo-stream demo-stream-build demo-stream-up demo-stream-down \
+        demo-stream-logs demo-stream-status demo-stream-test demo-stream-proto \
+        help

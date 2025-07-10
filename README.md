@@ -108,6 +108,34 @@ register_model("custom_model", custom_model,
 )
 ```
 
+## Examples and Demos
+
+### Basic Examples
+- `examples/basic_usage.jl` - Simple model serving examples
+- `examples/custom_model.jl` - Registering and using custom models
+
+### Infinite Stream Demo
+A comprehensive demonstration of streaming inference with RxInfer models:
+
+```bash
+# Run the streaming demo
+make demo-stream
+
+# Check demo status
+make demo-stream-status
+
+# View logs
+make demo-stream-logs
+```
+
+The demo showcases:
+- Real-time Bayesian inference on streaming data
+- Online parameter learning with adaptive models
+- gRPC communication using KServe v2 protocol
+- Three streaming models: Kalman filter, AR parameter learning, and adaptive mixture model
+
+See `examples/infinite_stream_demo/` for details.
+
 ## API Endpoints
 
 ### HTTP REST (KServe v2)
