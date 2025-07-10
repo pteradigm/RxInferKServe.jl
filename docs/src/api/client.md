@@ -149,13 +149,6 @@ except Exception as e:
 
 ```@docs
 RxInferClient
-RxInferKServe.server_live
-RxInferKServe.server_ready
-RxInferKServe.list_models
-RxInferKServe.model_info
-RxInferKServe.model_ready
-RxInferKServe.infer
-RxInferKServe.create_instance
-RxInferKServe.delete_instance
-RxInferKServe.infer_instance
+RxInferKServe.client_list_models
+RxInferKServe.run_inference
 ```

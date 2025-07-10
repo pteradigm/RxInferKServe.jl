@@ -4,13 +4,47 @@ using HTTP
 using JSON3
 using UUIDs
 
+"""
+    RxInferClient
+
+Client for communicating with RxInferKServe servers using the KServe v2 protocol.
+
+# Fields
+- `base_url::String`: Base URL of the server
+- `api_key::Union{String,Nothing}`: Optional API key for authentication
+- `timeout::Int`: Request timeout in seconds
+
+# Example
+```julia
+client = RxInferClient("http://localhost:8080")
+models = client_list_models(client)
+```
+"""
 struct RxInferClient
     base_url::String
     api_key::Union{String,Nothing}
     timeout::Int
 end
 
-# Constructor
+"""
+    RxInferClient(base_url="http://localhost:8080"; api_key=nothing, timeout=30)
+
+Create a new RxInferKServe client.
+
+# Arguments
+- `base_url::String="http://localhost:8080"`: Server base URL
+- `api_key::Union{String,Nothing}=nothing`: Optional API key for authentication
+- `timeout::Int=30`: Request timeout in seconds
+
+# Example
+```julia
+# Basic client
+client = RxInferClient()
+
+# Client with authentication
+client = RxInferClient("https://api.example.com", api_key="secret")
+```
+"""
 function RxInferClient(
     base_url::String = "http://localhost:8080";
     api_key::Union{String,Nothing} = nothing,
@@ -54,7 +88,26 @@ function ready_check(client::RxInferClient)
     return JSON3.read(response.body)
 end
 
-# List available models
+"""
+    client_list_models(client::RxInferClient)
+
+List all available models on the server.
+
+# Arguments
+- `client::RxInferClient`: The client instance
+
+# Returns
+- `Dict`: Dictionary containing model information
+
+# Example
+```julia
+client = RxInferClient()
+models = client_list_models(client)
+for model in models["models"]
+    println(model["name"], " - ", model["state"])
+end
+```
+"""
 function client_list_models(client::RxInferClient)
     response = HTTP.get(
         "$(client.base_url)/v2/models",
@@ -87,7 +140,38 @@ function is_model_ready(client::RxInferClient, model_name::String)
     return JSON3.read(response.body)["ready"]
 end
 
-# Run inference - KServe v2 format
+"""
+    run_inference(client, model_name, inputs; outputs=nothing, parameters=nothing, id=nothing)
+
+Run inference on a model using the KServe v2 protocol.
+
+# Arguments
+- `client::RxInferClient`: The client instance
+- `model_name::String`: Name of the model
+- `inputs::Vector{Dict{String,Any}}`: Input tensors
+
+# Keyword Arguments
+- `outputs::Union{Vector{Dict{String,Any}},Nothing}=nothing`: Requested output tensors
+- `parameters::Union{Dict{String,Any},Nothing}=nothing`: Additional parameters
+- `id::Union{String,Nothing}=nothing`: Request ID
+
+# Returns
+- `Dict`: Inference results containing output tensors
+
+# Example
+```julia
+client = RxInferClient()
+inputs = [
+    Dict(
+        "name" => "observations",
+        "shape" => [2, 1],
+        "datatype" => "FP64",
+        "data" => [1.0, 2.0]
+    )
+]
+result = run_inference(client, "linear_model", inputs)
+```
+"""
 function run_inference(
     client::RxInferClient,
     model_name::String,

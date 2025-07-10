@@ -10,7 +10,26 @@ const SERVER_INSTANCE = Ref{HTTP.Server}()
 const GRPC_SERVER_INSTANCE =
     Ref{Union{KServeV2.KServeV2GRPCServer.GRPCServer,Nothing}}(nothing)
 
-# Start the server
+"""
+    start_server(; host="127.0.0.1", port=8080, grpc_port=8081, enable_grpc=true, kwargs...)
+
+Start the RxInferKServe HTTP and optionally gRPC servers.
+
+# Arguments
+- `host::String="127.0.0.1"`: Host address to bind the server
+- `port::Int=8080`: Port number for HTTP server
+- `grpc_port::Int=8081`: Port number for gRPC server
+- `enable_grpc::Bool=true`: Whether to start the gRPC server
+- `kwargs...`: Additional configuration options passed to `ServerConfig`
+
+# Returns
+- `HTTP.Server`: The running HTTP server instance
+
+# Example
+```julia
+server = start_server(host="0.0.0.0", port=8080, log_level="debug")
+```
+"""
 function start_server(;
     host = "127.0.0.1",
     port = 8080,
@@ -53,7 +72,19 @@ function start_server(;
     return server
 end
 
-# Stop the server
+"""
+    stop_server()
+
+Stop the running RxInferKServe HTTP and gRPC servers.
+
+Gracefully shuts down both the HTTP server and gRPC server (if running).
+Logs warnings if servers are not currently running.
+
+# Example
+```julia
+stop_server()
+```
+"""
 function stop_server()
     # Stop HTTP server
     if isassigned(SERVER_INSTANCE)

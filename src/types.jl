@@ -28,7 +28,34 @@ end
 StructTypes.StructType(::Type{ModelInstance}) = StructTypes.Struct()
 
 
-# Server configuration
+"""
+    ServerConfig
+
+Configuration settings for the RxInferKServe server.
+
+# Fields
+- `host::String = "127.0.0.1"`: Server host address
+- `port::Int = 8080`: Server port number
+- `workers::Int = 1`: Number of worker processes
+- `log_level::String = "info"`: Logging level (debug, info, warn, error)
+- `enable_cors::Bool = true`: Enable CORS headers
+- `enable_auth::Bool = false`: Enable API key authentication
+- `api_keys::Vector{String} = String[]`: List of valid API keys
+- `max_request_size::Int = 10_000_000`: Maximum request size in bytes (10MB)
+- `timeout_seconds::Int = 300`: Request timeout in seconds
+- `enable_metrics::Bool = true`: Enable metrics collection
+
+# Example
+```julia
+config = ServerConfig(
+    host = "0.0.0.0",
+    port = 8080,
+    log_level = "debug",
+    enable_auth = true,
+    api_keys = ["secret-key-1", "secret-key-2"]
+)
+```
+"""
 @kwdef struct ServerConfig
     host::String = "127.0.0.1"
     port::Int = 8080
