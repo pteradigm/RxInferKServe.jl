@@ -9,14 +9,11 @@ of a time-varying signal with drift.
 using RxInferKServe
 using RxInfer
 using Distributions
+using Statistics
+using LinearAlgebra
 
 # Define the streaming inference model
-@model function streaming_kalman_filter(
-    y,
-    Δt = 1.0;
-    initial_state = nothing,
-    initial_cov = nothing,
-)
+@model function streaming_kalman_filter(y, Δt, initial_state, initial_cov)
     # Model parameters
     # State transition: x[t] = A * x[t-1] + w[t]
     # Observation: y[t] = H * x[t] + v[t]
@@ -58,7 +55,7 @@ using Distributions
 end
 
 # Online learning model for parameter estimation
-@model function online_parameter_learning(y, x_prev = nothing; window_size = 20)
+@model function online_parameter_learning(y, x_prev, window_size)
     # This model learns parameters of a AR(1) process with time-varying coefficients
     # y[t] = α[t] + β[t] * y[t-1] + ε[t]
 
@@ -104,7 +101,7 @@ end
 end
 
 # Adaptive mixture model for detecting regime changes
-@model function adaptive_mixture_model(y; n_components = 3, previous_weights = nothing)
+@model function adaptive_mixture_model(y, n_components, previous_weights)
     n = length(y)
 
     # Mixture weights with potential memory from previous batch
@@ -136,6 +133,68 @@ end
     return z, μ, σ, π
 end
 
+# Wrapper functions to handle parameter defaults
+function kalman_wrapper(data::Dict)
+    y = data["y"]
+    Δt = get(data, "Δt", 1.0)
+    initial_state = get(data, "initial_state", nothing)
+    initial_cov = get(data, "initial_cov", nothing)
+    
+    # Run inference
+    results = infer(
+        model = streaming_kalman_filter(Δt, initial_state, initial_cov),
+        data = (y = y,)
+    )
+    
+    # Extract results
+    return Dict(
+        "x" => mean.(results.x),
+        "Q" => mean(results.Q),
+        "R" => mean(results.R)
+    )
+end
+
+function ar_wrapper(data::Dict)
+    y = data["y"]
+    x_prev = get(data, "x_prev", nothing)
+    window_size = get(data, "window_size", 20)
+    
+    # Run inference
+    results = infer(
+        model = online_parameter_learning(x_prev, window_size),
+        data = (y = y,)
+    )
+    
+    # Extract results
+    return Dict(
+        "α" => mean.(results.α),
+        "β" => mean.(results.β),
+        "τ_α" => mean(results.τ_α),
+        "τ_β" => mean(results.τ_β),
+        "τ_obs" => mean(results.τ_obs)
+    )
+end
+
+function mixture_wrapper(data::Dict)
+    y = data["y"]
+    n_components = get(data, "n_components", 3)
+    previous_weights = get(data, "previous_weights", nothing)
+    
+    # Run inference
+    results = infer(
+        model = adaptive_mixture_model(n_components, previous_weights),
+        data = (y = y,)
+    )
+    
+    # Extract results
+    return Dict(
+        "z" => mode.(results.z),
+        "μ" => mean.(results.μ),
+        "σ" => mean.(results.σ),
+        "π" => mean(results.π)
+    )
+end
+
 # Function to start the streaming server
 function start_streaming_server(; port = 8080, grpc_port = 8081)
     println("Starting RxInferKServe with streaming models...")
@@ -149,10 +208,10 @@ function start_streaming_server(; port = 8080, grpc_port = 8081)
         log_level = "info",
     )
 
-    # Register streaming models
+    # Register streaming models with wrappers
     register_model(
         "streaming_kalman",
-        streaming_kalman_filter,
+        kalman_wrapper,
         version = "1.0.0",
         description = "Kalman filter for streaming data with unknown noise parameters",
         parameters = Dict("supports_streaming" => true, "state_dims" => 2, "obs_dims" => 1),
@@ -160,7 +219,7 @@ function start_streaming_server(; port = 8080, grpc_port = 8081)
 
     register_model(
         "online_ar_learning",
-        online_parameter_learning,
+        ar_wrapper,
         version = "1.0.0",
         description = "Online learning of time-varying AR(1) parameters",
         parameters = Dict(
@@ -172,7 +231,7 @@ function start_streaming_server(; port = 8080, grpc_port = 8081)
 
     register_model(
         "adaptive_mixture",
-        adaptive_mixture_model,
+        mixture_wrapper,
         version = "1.0.0",
         description = "Adaptive mixture model for regime detection",
         parameters = Dict(
