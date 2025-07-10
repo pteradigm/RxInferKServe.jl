@@ -8,8 +8,8 @@ services:
     image: rxinfer-kserve:latest
     container_name: rxinfer-streaming-server
     ports:
-      - "8080:8080"  # HTTP API
-      - "8081:8081"  # gRPC API
+      - "8090:8080"  # HTTP API (mapped to 8090 to avoid conflicts)
+      - "8091:8081"  # gRPC API (mapped to 8091 to avoid conflicts)
     environment:
       - JULIA_NUM_THREADS=4
       - RXINFER_LOG_LEVEL=info

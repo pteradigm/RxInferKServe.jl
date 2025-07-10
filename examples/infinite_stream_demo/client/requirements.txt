@@ -1,5 +1,7 @@
+black>=25.1.0
 grpcio>=1.60.0
 grpcio-tools>=1.60.0
+isort>=6.0.1
 numpy>=1.24.0
 matplotlib>=3.7.0
 protobuf>=4.25.0

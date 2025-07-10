@@ -17,10 +17,9 @@ This demo showcases RxInferKServe's capability to handle streaming data and perf
 
 - Podman with podman-compose
 - X11 display (for visualization) or modify to save plots to files
+- Ports 8090 and 8091 available (demo uses different ports than main server)
 
 ## Quick Start
-
-Note: The `docker/` directory name is kept as a standard convention, but we use podman-compose with it.
 
 ```bash
 cd docker

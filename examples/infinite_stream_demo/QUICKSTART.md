@@ -13,7 +13,7 @@ This demo implements an online learning system that processes streaming data usi
 
 - Podman installed with podman-compose
 - 4GB+ RAM available
-- Ports 8080 and 8081 available
+- Ports 8090 and 8091 available
 
 ## One-Command Start
 
@@ -53,8 +53,8 @@ Watch the console for:
 ```
 [Server] Streaming models registered successfully!
 [Server] Server listening on:
-[Server]   HTTP: http://0.0.0.0:8080
-[Server]   gRPC: 0.0.0.0:8081
+[Server]   HTTP: http://0.0.0.0:8080 (mapped to host port 8090)
+[Server]   gRPC: 0.0.0.0:8081 (mapped to host port 8091)
 
 [Client] Server is live!
 [Client] Model streaming_kalman is ready!
@@ -91,9 +91,9 @@ Edit `docker/docker-compose.yml` (used with podman-compose):
 
 If the demo fails:
 
-1. **Check ports**: `lsof -i :8080,8081`
+1. **Check ports**: `lsof -i :8090,8091`
 2. **View logs**: `podman-compose logs -f`
-3. **Test server**: `curl http://localhost:8080/v2/health/live`
+3. **Test server**: `curl http://localhost:8090/v2/health/live`
 4. **Rebuild clean**: `podman-compose down && podman-compose build --no-cache`
 
 ## Next Steps

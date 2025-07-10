@@ -44,8 +44,8 @@ Within 30 seconds, you should see:
 rxinfer-server | Starting RxInferKServe with streaming models...
 rxinfer-server | Streaming models registered successfully!
 rxinfer-server | Server listening on:
-rxinfer-server |   HTTP: http://0.0.0.0:8080
-rxinfer-server |   gRPC: 0.0.0.0:8081
+rxinfer-server |   HTTP: http://0.0.0.0:8080 (mapped to host port 8090)
+rxinfer-server |   gRPC: 0.0.0.0:8081 (mapped to host port 8091)
 ```
 
 **Client Side:**
@@ -134,7 +134,7 @@ streaming-client | ============================================================
 
 | Symptom | Likely Cause | Solution |
 |---------|--------------|----------|
-| "Address already in use" | Port conflict | `lsof -i :8080,8081` and kill processes |
+| "Address already in use" | Port conflict | `lsof -i :8090,8091` and kill processes |
 | "Model not ready" loop | Server startup issue | Check server logs: `podman logs rxinfer-server` |
 | No processing output | gRPC connection failed | Restart: `podman-compose down && podman-compose up` |
 | Very slow startup | First-time Julia compilation | Wait 2-3 minutes on first run |
@@ -143,10 +143,10 @@ streaming-client | ============================================================
 
 ```bash
 # Test server is responding
-curl http://localhost:8080/v2/health/live
+curl http://localhost:8090/v2/health/live
 
 # List available models
-curl http://localhost:8080/v2/models | jq
+curl http://localhost:8090/v2/models | jq
 
 # Expected output:
 {
