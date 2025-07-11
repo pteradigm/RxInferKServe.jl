@@ -11,9 +11,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11'
+      
+      - name: Cache Julia registries
+        uses: actions/cache@v4
+        with:
+          path: ~/.julia/registries
+          key: ${{ runner.os }}-julia-registries-${{ hashFiles('**/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-registries-
+      
+      - name: Check formatting
+        run: |
+          julia -e '
+            using Pkg
+            Pkg.activate(temp=true)
+            Pkg.add("JuliaFormatter")
+            using JuliaFormatter
+            exit(format("."; verbose=true) ? 0 : 1)
+          '
+
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -24,13 +53,6 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-        include:
-          - os: windows-latest
-            version: '1.11'
-            arch: x64
-          - os: macOS-latest
-            version: '1.11'
-            arch: aarch64
     steps:
       - uses: actions/checkout@v4
       
@@ -39,10 +61,8 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       
-      # Improved caching strategy
       - name: Cache Julia dependencies
         uses: actions/cache@v4
-        id: julia-cache
         with:
           path: |
             ~/.julia/artifacts
@@ -54,9 +74,7 @@ jobs:
             ${{ runner.os }}-julia-${{ matrix.version }}-
             ${{ runner.os }}-julia-
       
-      # Alternative: Use julia-actions/cache with better settings
       - uses: julia-actions/cache@v2
-        if: steps.julia-cache.outputs.cache-hit != 'true'
         with:
           cache-name: julia-cache-v3
           cache-compiled: true
@@ -70,9 +88,6 @@ jobs:
       
       - uses: julia-actions/julia-processcoverage@v1
       
-      # Upload coverage to Codecov
-      # Note: Codecov allows tokenless uploads from the default branch (main)
-      # For other branches, a token would be required
       - uses: codecov/codecov-action@v4
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
         with:
@@ -80,9 +95,10 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
-  sysimage:
+  build:
     name: Build System Image
     runs-on: ubuntu-latest
+    needs: lint
     steps:
       - uses: actions/checkout@v4
       
@@ -90,7 +106,6 @@ jobs:
         with:
           version: '1.11'
       
-      # Cache for system image build
       - name: Cache Julia dependencies
         uses: actions/cache@v4
         with:
@@ -114,39 +129,33 @@ jobs:
       
       - name: Test system image
         run: |
-          julia --sysimage=rxinfer_server.so --project=. -e 'using RxInferKServe; println("System image loaded successfully")'
+          julia --sysimage=rxinfer-kserve.so --project=. -e 'using RxInferKServe; println("System image loaded successfully")'
       
       - name: Upload system image
         uses: actions/upload-artifact@v4
         with:
           name: sysimage-ubuntu-latest
-          path: rxinfer_server.so
+          path: rxinfer-kserve.so
 
-  lint:
-    name: Code Quality
+  docker-build:
+    name: Build Docker Image
     runs-on: ubuntu-latest
+    needs: [test, build]
     steps:
       - uses: actions/checkout@v4
       
-      - uses: julia-actions/setup-julia@v2
-        with:
-          version: '1.11'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       
-      # Simple cache for linting
-      - name: Cache Julia registries
-        uses: actions/cache@v4
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
         with:
-          path: ~/.julia/registries
-          key: ${{ runner.os }}-julia-registries-${{ hashFiles('**/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-julia-registries-
-      
-      - name: Check formatting
-        run: |
-          julia -e '
-            using Pkg
-            Pkg.activate(temp=true)
-            Pkg.add("JuliaFormatter")
-            using JuliaFormatter
-            exit(format("."; verbose=true) ? 0 : 1)
-          '
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          tags: ghcr.io/pteradigm/rxinferkserve:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1

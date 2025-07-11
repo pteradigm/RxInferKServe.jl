@@ -76,7 +76,7 @@ format:
 clean:
 	@echo "Cleaning build artifacts..."
 	rm -rf Manifest.toml
-	rm -rf rxinfer_server.so
+	rm -rf rxinfer-kserve.so
 	rm -rf .julia
 	find . -name "*.cov" -delete
 	find . -name "*.mem" -delete
@@ -104,7 +104,7 @@ server-dev: build
 .PHONY: server-prod
 server-prod: sysimage
 	@echo "Starting RxInferKServe with optimized image..."
-	$(JULIA) --sysimage=rxinfer_server.so --project=. -e 'using RxInferKServe; start_server()'
+	$(JULIA) --sysimage=rxinfer-kserve.so --project=. -e 'using RxInferKServe; start_server()'
 
 # Run REPL with project
 .PHONY: repl
