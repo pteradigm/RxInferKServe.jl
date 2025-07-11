@@ -25,11 +25,6 @@ makedocs(
     ],
 )
 
-# Only deploy docs when not in a PR
-if get(ENV, "GITHUB_EVENT_NAME", "") != "pull_request"
-    deploydocs(
-        repo = "github.com/pteradigm/RxInferKServe.jl.git",
-        devbranch = "main",
-        push_preview = true,
-    )
-end
+# Deployment is handled by GitHub Actions workflow
+# The docs.yml workflow uses GitHub Pages deployment action
+# which has proper permissions and doesn't require pushing to gh-pages
