@@ -60,7 +60,7 @@ USER rxinfer
 # Environment variables
 ENV JULIA_PROJECT=/app
 ENV JULIA_DEPOT_PATH=/home/rxinfer/.julia
-ENV JULIA_SYSIMAGE=/app/rxinfer_server.so
+ENV JULIA_SYSIMAGE=/app/rxinfer-kserve.so
 ENV JULIA_NUM_THREADS=auto
 ENV RXINFER_MODEL_PATH=/app/models
 ENV RXINFER_CONFIG_PATH=/app/config
@@ -73,4 +73,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD julia --sysimage=$JULIA_SYSIMAGE -e 'using HTTP; HTTP.get("http://localhost:8080/v2/health/ready")' || exit 1
 
 # Default command
-CMD ["julia", "--sysimage=/app/rxinfer_server.so", "-e", "using RxInferKServe; start_server(host=\"0.0.0.0\", port=8080)"]
+CMD ["julia", "--sysimage=/app/rxinfer-kserve.so", "-e", "using RxInferKServe; start_server(host=\"0.0.0.0\", port=8080)"]
