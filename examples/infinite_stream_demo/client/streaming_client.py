@@ -21,7 +21,14 @@ import sys
 # We'll need to generate these from the protobuf file
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'proto'))
+
+# Add proto directory to path
+proto_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'proto')
+if not os.path.exists(proto_path):
+    # If running from /app in Docker
+    proto_path = '/app/proto'
+sys.path.insert(0, proto_path)
+
 import inference_pb2
 import inference_pb2_grpc
 
