@@ -67,7 +67,9 @@ lint:
 .PHONY: format
 format:
 	@echo "Formatting Julia code..."
-	$(JULIA) --project=. -e 'using Pkg; Pkg.add("JuliaFormatter"); using JuliaFormatter; format("src", verbose=true); format("test", verbose=true)'
+	@$(JULIA) -e 'using Pkg; Pkg.add("JuliaFormatter")' 2>/dev/null || true
+	@$(JULIA) -e 'using JuliaFormatter; format(".", verbose=true)'
+
 
 # Clean build artifacts
 .PHONY: clean
@@ -122,12 +124,6 @@ docs-serve: docs
 	@echo "Serving documentation at http://localhost:8000"
 	cd docs/build && python3 -m http.server 8000
 
-# Format code with JuliaFormatter
-.PHONY: format
-format:
-	@echo "Formatting Julia code..."
-	@$(JULIA) -e 'using Pkg; Pkg.add("JuliaFormatter")' 2>/dev/null || true
-	@$(JULIA) -e 'using JuliaFormatter; format(".", verbose=true)'
 
 # Check Julia version
 .PHONY: check-julia
@@ -195,7 +191,7 @@ demo-stream-status:
 	if podman-compose ps | grep -q "rxinfer-streaming-server.*Up" && \
 	   podman-compose ps | grep -q "rxinfer-streaming-client.*Up"; then \
 		echo "✓ Demo containers are running"; \
-		if curl -sf http://localhost:8080/v2/health/live > /dev/null; then \
+		if curl -sf http://localhost:8090/v2/health/live > /dev/null; then \
 			echo "✓ Server is healthy"; \
 			echo "✓ DEMO IS RUNNING SUCCESSFULLY"; \
 		else \

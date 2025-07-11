@@ -10,20 +10,16 @@ import grpc
 import numpy as np
 import time
 import json
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 import matplotlib.pyplot as plt
 from collections import deque
-import threading
 import signal
 import sys
+import os
 
 # Import the generated gRPC code
-# We'll need to generate these from the protobuf file
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'proto'))
-import inference_pb2
-import inference_pb2_grpc
+from kserve.v2 import inference_pb2
+from kserve.v2 import inference_pb2_grpc
 
 
 class StreamingDataGenerator:

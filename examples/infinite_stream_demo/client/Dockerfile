@@ -13,21 +13,7 @@ WORKDIR /app
 COPY examples/infinite_stream_demo/client/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy proto files
-COPY proto /proto
-
-# Generate Python proto files
-RUN mkdir -p proto && \
-    python -m grpc_tools.protoc \
-    -I/proto \
-    --python_out=proto \
-    --grpc_python_out=proto \
-    /proto/kserve/v2/inference.proto && \
-    mv proto/kserve/v2/*.py proto/ && \
-    rm -rf proto/kserve && \
-    sed -i 's/import kserve.v2.inference_pb2/import inference_pb2/' proto/inference_pb2_grpc.py || true
-
-# Copy client code
+# Copy client code including generated proto files
 COPY examples/infinite_stream_demo/client/ .
 
 # Set environment for matplotlib
