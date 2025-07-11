@@ -183,7 +183,7 @@ using PackageCompiler
 
 create_sysimage(
     ["RxInferKServe", "RxInfer"],
-    sysimage_path="rxinfer_server.so",
+    sysimage_path="rxinfer-kserve.so",
     precompile_execution_file="scripts/precompile.jl"
 )
 ```

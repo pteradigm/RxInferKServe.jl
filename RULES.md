@@ -19,7 +19,7 @@ julia> using Pkg; Pkg.test("RxInferKServe")
 julia --project=. scripts/build_sysimage.jl
 
 # Use the optimized image
-julia --sysimage=rxinfer_server.so --project=.
+julia --sysimage=rxinfer-kserve.so --project=.
 ```
 
 ### Running the Server

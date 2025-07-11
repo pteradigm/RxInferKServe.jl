@@ -1,7 +1,9 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
 
 permissions:
@@ -14,6 +16,7 @@ jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
       new_release_version: ${{ steps.semantic.outputs.new_release_version }}
@@ -25,6 +28,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
       
       - uses: julia-actions/setup-julia@v2
         with:
@@ -39,63 +43,6 @@ jobs:
         run: |
           npm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/changelog @semantic-release/exec conventional-changelog-conventionalcommits
       
-      - name: Create semantic-release config
-        run: |
-          cat > .releaserc.json << 'EOF'
-          {
-            "branches": ["main"],
-            "plugins": [
-              ["@semantic-release/commit-analyzer", {
-                "preset": "conventionalcommits",
-                "releaseRules": [
-                  {"type": "feat", "release": "minor"},
-                  {"type": "fix", "release": "patch"},
-                  {"type": "perf", "release": "patch"},
-                  {"type": "revert", "release": "patch"},
-                  {"type": "docs", "scope": "README", "release": "patch"},
-                  {"type": "refactor", "release": "patch"},
-                  {"type": "test", "release": false},
-                  {"type": "style", "release": false},
-                  {"type": "chore", "release": false},
-                  {"type": "ci", "release": false},
-                  {"breaking": true, "release": "major"}
-                ]
-              }],
-              ["@semantic-release/release-notes-generator", {
-                "preset": "conventionalcommits",
-                "presetConfig": {
-                  "types": [
-                    {"type": "feat", "section": "Features"},
-                    {"type": "fix", "section": "Bug Fixes"},
-                    {"type": "perf", "section": "Performance Improvements"},
-                    {"type": "revert", "section": "Reverts"},
-                    {"type": "docs", "section": "Documentation", "hidden": false},
-                    {"type": "style", "section": "Styles", "hidden": true},
-                    {"type": "chore", "section": "Miscellaneous Chores", "hidden": true},
-                    {"type": "refactor", "section": "Code Refactoring", "hidden": false},
-                    {"type": "test", "section": "Tests", "hidden": true},
-                    {"type": "build", "section": "Build System", "hidden": true},
-                    {"type": "ci", "section": "Continuous Integration", "hidden": true}
-                  ]
-                }
-              }],
-              "@semantic-release/changelog",
-              ["@semantic-release/exec", {
-                "prepareCmd": "julia -e 'using Pkg, TOML; version = \"${nextRelease.version}\"; proj = TOML.parsefile(\"Project.toml\"); proj[\"version\"] = version; open(\"Project.toml\", \"w\") do io; TOML.print(io, proj); end'"
-              }],
-              ["@semantic-release/git", {
-                "assets": ["Project.toml", "CHANGELOG.md"],
-                "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-              }],
-              ["@semantic-release/github", {
-                "assets": [
-                  {"path": "rxinfer_server.so", "label": "System Image (Linux x64)", "name": "rxinfer_server-${nextRelease.version}-linux-x64.so"}
-                ]
-              }]
-            ]
-          }
-          EOF
-      
       - name: Build system image for release
         run: |
           julia --project=. -e 'using Pkg; Pkg.instantiate()'
@@ -104,7 +51,7 @@ jobs:
       - name: Run semantic release
         id: semantic
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: "github-actions[bot]"
           GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
           GIT_COMMITTER_NAME: "github-actions[bot]"
@@ -150,7 +97,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -158,22 +105,3 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ needs.release.outputs.new_release_version }}
-
-  julia-registry:
-    name: Register Package
-    needs: release
-    if: needs.release.outputs.new_release_published == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      
-      - uses: julia-actions/setup-julia@v2
-        with:
-          version: '1.11'
-      
-      - name: Register package
-        uses: julia-actions/RegisterAction@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}

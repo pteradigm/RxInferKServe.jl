@@ -32,7 +32,7 @@ RUN julia --project=. scripts/build_sysimage.jl
 EXPOSE 8080 8081
 
 # Run with system image
-CMD ["julia", "--sysimage=rxinfer_server.so", "--project=.", "-e", "using RxInferKServe; start_server(host=\"0.0.0.0\")"]
+CMD ["julia", "--sysimage=rxinfer-kserve.so", "--project=.", "-e", "using RxInferKServe; start_server(host=\"0.0.0.0\")"]
 ```
 
 ### Multi-stage Build

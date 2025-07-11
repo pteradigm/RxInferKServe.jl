@@ -5,7 +5,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
     open-pull-requests-limit: 10
+    # Group all GitHub Actions updates into a single PR
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     commit-message:
       prefix: "ci"
       include: "scope"
@@ -13,36 +21,46 @@ updates:
       - "dependencies"
       - "github-actions"
     reviewers:
-      - "pteradigm/maintainers"
+      - "rbellamy"
 
   # Docker dependencies
   - package-ecosystem: "docker"
-    directory: "/docker"
+    directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
     commit-message:
-      prefix: "build"
-      prefix-development: "build"
+      prefix: "chore"
       include: "scope"
     labels:
       - "dependencies"
       - "docker"
     reviewers:
-      - "pteradigm/maintainers"
+      - "rbellamy"
 
   # Python dependencies for client
   - package-ecosystem: "pip"
     directory: "/python"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    # Group all Python updates into a single PR
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
     commit-message:
-      prefix: "build"
-      prefix-development: "build"
+      prefix: "chore"
       include: "scope"
     labels:
       - "dependencies"
       - "python"
+      - "client"
     reviewers:
-      - "pteradigm/maintainers"
+      - "rbellamy"
