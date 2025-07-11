@@ -51,7 +51,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/Dockerfile
+          file: ./Dockerfile
           # Build only amd64 for now - add arm64 if there's demand
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}

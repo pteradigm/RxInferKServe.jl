@@ -82,7 +82,7 @@ Edit `server/streaming_model.jl`:
 - Add client inference calls
 
 ### Adjust Performance
-Edit `docker/docker-compose.yml` (used with podman-compose):
+Edit `docker-compose.yml` (used with podman-compose):
 - `JULIA_NUM_THREADS`: Parallel processing
 - Container resource limits
 - Network timeouts

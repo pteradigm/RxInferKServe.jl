@@ -185,7 +185,7 @@ make format     # Format code with JuliaFormatter
 
 ```bash
 # Build Docker image
-docker build -f docker/Dockerfile -t rxinferkserve:dev .
+docker build -f Dockerfile -t rxinferkserve:dev .
 
 # Run container
 docker run -p 8080:8080 rxinferkserve:dev
