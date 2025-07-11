@@ -18,25 +18,48 @@ import signal
 import sys
 
 # Import the generated gRPC code
-# We'll need to generate these from the protobuf file
+# Add proto directory to path - must be done before imports
 import sys
 import os
 
-# Add proto directory to path
-try:
+# Determine proto path
+if hasattr(sys, 'frozen'):
+    # Running as frozen executable
+    proto_path = os.path.join(os.path.dirname(sys.executable), 'proto')
+elif '__file__' in globals():
+    # Running as script with __file__ defined
     proto_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'proto')
-except NameError:
-    # __file__ not defined, likely running in Docker
+else:
+    # Running with python -c or similar, assume Docker environment
     proto_path = '/app/proto'
-    
-if not os.path.exists(proto_path):
-    # Fallback to /app/proto
-    proto_path = '/app/proto'
-    
-sys.path.insert(0, proto_path)
 
-import inference_pb2
-import inference_pb2_grpc
+# Debug output
+print(f"DEBUG: Initial proto_path = {proto_path}")
+print(f"DEBUG: Current directory = {os.getcwd()}")
+print(f"DEBUG: Directory contents = {os.listdir('.')}")
+
+# Ensure proto path exists and add to sys.path
+if not os.path.exists(proto_path) and proto_path != '/app/proto':
+    # Try fallback to /app/proto
+    proto_path = '/app/proto'
+    
+if os.path.exists(proto_path):
+    sys.path.insert(0, proto_path)
+    print(f"DEBUG: Added {proto_path} to sys.path")
+else:
+    print(f"ERROR: Cannot find proto directory at {proto_path}")
+    print(f"DEBUG: Checked paths: {proto_path}")
+    sys.exit(1)
+
+# Now import the proto files
+try:
+    import inference_pb2
+    import inference_pb2_grpc
+except ImportError as e:
+    print(f"ERROR: Failed to import proto files: {e}")
+    print(f"Python path: {sys.path}")
+    print(f"Proto path contents: {os.listdir(proto_path) if os.path.exists(proto_path) else 'NOT FOUND'}")
+    sys.exit(1)
 
 
 class StreamingDataGenerator:
