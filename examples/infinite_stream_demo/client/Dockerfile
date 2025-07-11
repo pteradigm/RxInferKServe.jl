@@ -25,7 +25,7 @@ RUN mkdir -p proto && \
     /proto/kserve/v2/inference.proto && \
     mv proto/kserve/v2/*.py proto/ && \
     rm -rf proto/kserve && \
-    sed -i 's/import kserve.v2.inference_pb2/import inference_pb2/' proto/inference_pb2_grpc.py || true
+    sed -i 's/from kserve.v2 import inference_pb2/import inference_pb2/' proto/inference_pb2_grpc.py || true
 
 # Copy client code
 COPY examples/infinite_stream_demo/client/ .

@@ -23,10 +23,16 @@ import sys
 import os
 
 # Add proto directory to path
-proto_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'proto')
-if not os.path.exists(proto_path):
-    # If running from /app in Docker
+try:
+    proto_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'proto')
+except NameError:
+    # __file__ not defined, likely running in Docker
     proto_path = '/app/proto'
+    
+if not os.path.exists(proto_path):
+    # Fallback to /app/proto
+    proto_path = '/app/proto'
+    
 sys.path.insert(0, proto_path)
 
 import inference_pb2
