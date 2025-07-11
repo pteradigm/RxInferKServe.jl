@@ -151,7 +151,7 @@ release: clean deps build test
 .PHONY: docker-build
 docker-build:
 	@echo "Building Docker image..."
-	docker build -t rxinfer-mlserver:latest -f docker/Dockerfile .
+	docker build -t rxinfer-mlserver:latest -f Dockerfile .
 
 .PHONY: docker-run
 docker-run:
@@ -162,32 +162,32 @@ docker-run:
 .PHONY: demo-stream
 demo-stream:
 	@echo "Starting infinite stream demo..."
-	cd examples/infinite_stream_demo/docker && podman-compose up --build
+	cd examples/infinite_stream_demo && podman-compose up --build
 
 .PHONY: demo-stream-build
 demo-stream-build:
 	@echo "Building infinite stream demo containers..."
-	cd examples/infinite_stream_demo/docker && podman-compose build
+	cd examples/infinite_stream_demo && podman-compose build
 
 .PHONY: demo-stream-up
 demo-stream-up:
 	@echo "Starting infinite stream demo (detached)..."
-	cd examples/infinite_stream_demo/docker && podman-compose up -d
+	cd examples/infinite_stream_demo && podman-compose up -d
 
 .PHONY: demo-stream-down
 demo-stream-down:
 	@echo "Stopping infinite stream demo..."
-	cd examples/infinite_stream_demo/docker && podman-compose down
+	cd examples/infinite_stream_demo && podman-compose down
 
 .PHONY: demo-stream-logs
 demo-stream-logs:
 	@echo "Showing infinite stream demo logs..."
-	cd examples/infinite_stream_demo/docker && podman-compose logs -f
+	cd examples/infinite_stream_demo && podman-compose logs -f
 
 .PHONY: demo-stream-status
 demo-stream-status:
 	@echo "Checking infinite stream demo status..."
-	@cd examples/infinite_stream_demo/docker && \
+	@cd examples/infinite_stream_demo && \
 	if podman-compose ps | grep -q "rxinfer-streaming-server.*Up" && \
 	   podman-compose ps | grep -q "rxinfer-streaming-client.*Up"; then \
 		echo "✓ Demo containers are running"; \
@@ -205,7 +205,7 @@ demo-stream-status:
 .PHONY: demo-stream-test
 demo-stream-test: demo-stream-build
 	@echo "Testing infinite stream demo..."
-	@cd examples/infinite_stream_demo/docker && \
+	@cd examples/infinite_stream_demo && \
 	podman-compose up -d rxinfer-server && \
 	sleep 10 && \
 	if podman-compose exec rxinfer-server curl -f http://localhost:8080/v2/health/live; then \

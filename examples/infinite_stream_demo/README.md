@@ -22,7 +22,6 @@ This demo showcases RxInferKServe's capability to handle streaming data and perf
 ## Quick Start
 
 ```bash
-cd docker
 podman-compose up --build
 ```
 

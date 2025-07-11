@@ -4,7 +4,7 @@ services:
   rxinfer-server:
     build:
       context: ../../..
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
     image: rxinfer-kserve:latest
     container_name: rxinfer-streaming-server
     ports:
@@ -15,12 +15,13 @@ services:
       - RXINFER_LOG_LEVEL=info
     volumes:
       - ../server/streaming_model.jl:/app/streaming_model.jl:ro
-    command: ["julia", "--project=.", "/app/streaming_model.jl"]
+    command: ["julia", "--sysimage=/app/rxinfer_server.so", "--project=.", "/app/streaming_model.jl"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/v2/health/live"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8080/v2/health/live && curl -f http://localhost:8080/v2/models"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 6
+      start_period: 30s
     networks:
       - rxinfer-net
 

@@ -190,7 +190,7 @@ create_sysimage(
 
 ### Docker Deployment
 
-See `docker/Dockerfile` for containerized deployment example.
+See `Dockerfile` for containerized deployment example.
 
 ## Protocol Implementation
 
