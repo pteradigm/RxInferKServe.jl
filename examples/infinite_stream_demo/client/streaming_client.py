@@ -10,12 +10,12 @@ import grpc
 import numpy as np
 import time
 import json
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 import matplotlib.pyplot as plt
 from collections import deque
-import threading
 import signal
 import sys
+import os
 
 # Import the generated gRPC code
 from kserve.v2 import inference_pb2
