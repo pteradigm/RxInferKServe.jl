@@ -81,7 +81,7 @@ jobs:
               }],
               "@semantic-release/changelog",
               ["@semantic-release/exec", {
-                "prepareCmd": "julia -e 'using Pkg; pkg\"activate .\"; version = \"${nextRelease.version}\"; Pkg.project().version = VersionNumber(version); open(\"Project.toml\", \"w\") do io; Pkg.TOML.print(io, Pkg.project().dict); end'"
+                "prepareCmd": "julia -e 'using Pkg, TOML; version = \"${nextRelease.version}\"; proj = TOML.parsefile(\"Project.toml\"); proj[\"version\"] = version; open(\"Project.toml\", \"w\") do io; TOML.print(io, proj); end'"
               }],
               ["@semantic-release/git", {
                 "assets": ["Project.toml", "CHANGELOG.md"],
