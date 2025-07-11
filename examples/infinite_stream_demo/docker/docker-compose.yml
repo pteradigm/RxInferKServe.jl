@@ -38,7 +38,6 @@ services:
       - DISPLAY=${DISPLAY:-}
       - MPLBACKEND=Agg
     volumes:
-      - ../client:/app:ro
       - ./results:/app/results
     networks:
       - rxinfer-net
