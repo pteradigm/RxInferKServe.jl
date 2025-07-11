@@ -18,8 +18,8 @@ import signal
 import sys
 
 # Import the generated gRPC code
-from grpc.kserve.v2 import inference_pb2
-from grpc.kserve.v2 import inference_pb2_grpc
+from kserve.v2 import inference_pb2
+from kserve.v2 import inference_pb2_grpc
 
 
 class StreamingDataGenerator:

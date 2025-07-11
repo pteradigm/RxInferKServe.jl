@@ -1,7 +1,6 @@
 # Generated gRPC files
-grpc/kserve/v2/*.py
+kserve/
 
 # Python cache
 __pycache__/
 *.pyc
-grpc/**/__pycache__/
