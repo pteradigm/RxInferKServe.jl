@@ -57,9 +57,6 @@ jobs:
           - os: windows-latest
             version: '1.11'
             arch: x64
-          - os: macOS-latest
-            version: '1.11'
-            arch: aarch64
     steps:
       - uses: actions/checkout@v4
       
