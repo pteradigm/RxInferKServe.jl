@@ -24,7 +24,7 @@ jobs:
       new_release_minor_version: ${{ steps.semantic.outputs.new_release_minor_version }}
       new_release_patch_version: ${{ steps.semantic.outputs.new_release_patch_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -64,7 +64,7 @@ jobs:
     if: needs.release.outputs.new_release_published == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
       
