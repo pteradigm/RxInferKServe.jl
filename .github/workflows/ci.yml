@@ -15,14 +15,14 @@ jobs:
     name: Code Quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1.11'
       
       - name: Cache Julia registries
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.julia/registries
           key: ${{ runner.os }}-julia-registries-${{ hashFiles('**/Project.toml') }}
@@ -54,7 +54,7 @@ jobs:
         arch:
           - x64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - uses: julia-actions/setup-julia@v2
         with:
@@ -62,7 +62,7 @@ jobs:
           arch: ${{ matrix.arch }}
       
       - name: Cache Julia dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.julia/artifacts
@@ -88,7 +88,7 @@ jobs:
       
       - uses: julia-actions/julia-processcoverage@v1
       
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
         with:
           file: lcov.info
@@ -100,14 +100,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1.11'
       
       - name: Cache Julia dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.julia/artifacts
@@ -132,7 +132,7 @@ jobs:
           julia --sysimage=rxinfer-kserve.so --project=. -e 'using RxInferKServe; println("System image loaded successfully")'
       
       - name: Upload system image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sysimage-ubuntu-latest
           path: rxinfer-kserve.so
@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, build]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
