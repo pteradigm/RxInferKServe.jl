@@ -4,6 +4,14 @@ using HTTP
 using JSON3
 
 @testset "Server" begin
+    @testset "Health probe access logging" begin
+        @test RxInferKServe.is_health_probe_path("/v2/health/live")
+        @test RxInferKServe.is_health_probe_path("/v2/health/ready")
+        @test RxInferKServe.is_health_probe_path("/v2/health/ready?probe=kubernetes")
+        @test !RxInferKServe.is_health_probe_path("/v2/models")
+        @test !RxInferKServe.is_health_probe_path("/v2/models/cortex-unified/ready")
+    end
+
     # Start server on a random port to avoid conflicts
     port = 8080 + rand(1000:9000)
     server = nothing
