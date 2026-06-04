@@ -4,23 +4,32 @@ using HTTP
 using JSON3
 using Dates
 
+const HEALTH_PROBE_PATHS = Set(["/v2/health/live", "/v2/health/ready"])
+
+is_health_probe_path(path::AbstractString) = first(split(path, '?')) in HEALTH_PROBE_PATHS
+
 # Logging middleware
 function logging_middleware(handler)
     return function (request::HTTP.Request)
         start_time = time()
         method = request.method
         path = request.target
+        log_request = !is_health_probe_path(path)
 
         # Generate request ID
         request_id = uuid4()
 
-        @info "Request received" method=method path=path request_id=request_id
+        if log_request
+            @info "Request received" method=method path=path request_id=request_id
+        end
 
         try
             response = handler(request)
             duration_ms = (time() - start_time) * 1000
 
-            @info "Request completed" method=method path=path status=response.status duration_ms=duration_ms request_id=request_id
+            if log_request
+                @info "Request completed" method=method path=path status=response.status duration_ms=duration_ms request_id=request_id
+            end
 
             return response
         catch e
