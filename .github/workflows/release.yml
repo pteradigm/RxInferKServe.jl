@@ -45,7 +45,7 @@ jobs:
       
       - name: Install semantic-release
         run: |
-          npm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/changelog @semantic-release/exec conventional-changelog-conventionalcommits
+          npm install -g semantic-release @semantic-release/github conventional-changelog-conventionalcommits
       
       - name: Build system image for release
         run: |
