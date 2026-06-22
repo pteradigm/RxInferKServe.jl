@@ -56,7 +56,7 @@ For organizations using GitHub Rulesets (Settings → Rules → Rulesets):
 ## Bypass List
 
 Consider allowing bypass for:
-- Bot accounts (e.g., dependabot, semantic-release bot)
+- Bot accounts that must open or update pull requests (e.g., dependabot)
 - Emergency fixes (with audit trail)
 
 ## Implementation
