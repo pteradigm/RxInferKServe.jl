@@ -1,6 +1,8 @@
 # Multi-stage build for RxInferKServe
 FROM julia:1.11-bullseye AS builder
 
+ENV JULIA_PKG_SERVER=""
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \

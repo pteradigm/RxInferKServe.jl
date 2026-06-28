@@ -17,7 +17,6 @@ Navigate to Settings → Branches → Add rule for `main` branch:
 - ✅ **Require status checks to pass before merging**
   - ✅ Require branches to be up to date before merging
   - **Required status checks**:
-    - `Julia 1.10 - ubuntu-latest - x64`
     - `Julia 1.11 - ubuntu-latest - x64`
     - `Build Docker Image`
     - `Code Quality`
@@ -47,7 +46,6 @@ For organizations using GitHub Rulesets (Settings → Rules → Rulesets):
    - Restrict deletions
    - Require pull request (1 approval)
    - Require status checks:
-     - Julia 1.10 tests
      - Julia 1.11 tests
      - Docker build
      - Code quality
