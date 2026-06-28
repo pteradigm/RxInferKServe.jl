@@ -13,6 +13,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  JULIA_PKG_SERVER: ""
+
 jobs:
   lint:
     name: Code Quality
