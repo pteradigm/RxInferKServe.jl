@@ -14,19 +14,6 @@
         "preset": "conventionalcommits"
       }
     ],
-    [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "julia --project=. scripts/set_project_version.jl ${nextRelease.version}"
-      }
-    ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": ["Project.toml", "Manifest.toml"],
-        "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}\n\nSigned-off-by: pteradigm-release[bot] <pteradigm-release[bot]@users.noreply.github.com>"
-      }
-    ],
     "@semantic-release/github"
   ]
 }
