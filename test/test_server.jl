@@ -2,8 +2,39 @@ using Test
 using RxInferKServe
 using HTTP
 using JSON3
+using Logging
 
 @testset "Server" begin
+    @testset "Server config does not clobber application logger by default" begin
+        original_logger = global_logger()
+        sink = IOBuffer()
+        application_logger = ConsoleLogger(sink, Logging.Debug)
+
+        try
+            global_logger(application_logger)
+            RxInferKServe.init_config(log_level = "debug")
+
+            @test global_logger() === application_logger
+        finally
+            global_logger(original_logger)
+        end
+    end
+
+    @testset "Server config can opt in to standalone logger setup" begin
+        original_logger = global_logger()
+        sink = IOBuffer()
+        application_logger = ConsoleLogger(sink, Logging.Debug)
+
+        try
+            global_logger(application_logger)
+            RxInferKServe.init_config(log_level = "debug", configure_global_logger = true)
+
+            @test global_logger() !== application_logger
+        finally
+            global_logger(original_logger)
+        end
+    end
+
     @testset "Health probe access logging" begin
         @test RxInferKServe.is_health_probe_path("/v2/health/live")
         @test RxInferKServe.is_health_probe_path("/v2/health/ready")

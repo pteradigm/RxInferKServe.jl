@@ -10,21 +10,28 @@ function init_config(; kwargs...)
     config = ServerConfig(; kwargs...)
     SERVER_CONFIG[] = config
 
-    # Set up logging
-    log_level = config.log_level
-    if log_level == "debug"
-        global_logger(ConsoleLogger(stderr, Logging.Debug))
-    elseif log_level == "info"
-        global_logger(ConsoleLogger(stderr, Logging.Info))
-    elseif log_level == "warn"
-        global_logger(ConsoleLogger(stderr, Logging.Warn))
-    elseif log_level == "error"
-        global_logger(ConsoleLogger(stderr, Logging.Error))
+    if config.configure_global_logger
+        global_logger(ConsoleLogger(stderr, _logging_level(config.log_level)))
     end
 
     @info "Server configuration initialized" host=config.host port=config.port workers=config.workers
 
     return config
+end
+
+function _logging_level(log_level::AbstractString)
+    normalized = lowercase(log_level)
+    if normalized == "debug"
+        return Logging.Debug
+    elseif normalized == "info"
+        return Logging.Info
+    elseif normalized == "warn"
+        return Logging.Warn
+    elseif normalized == "error"
+        return Logging.Error
+    end
+
+    throw(ArgumentError("unsupported log_level: $log_level"))
 end
 
 # Get current configuration
