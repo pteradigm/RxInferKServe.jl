@@ -45,12 +45,7 @@ jobs:
       
       - name: Install semantic-release
         run: |
-          npm install -g semantic-release @semantic-release/github @semantic-release/exec @semantic-release/git conventional-changelog-conventionalcommits
-      
-      - name: Build system image for release
-        run: |
-          julia --project=. -e 'using Pkg; Pkg.instantiate()'
-          julia --project=. scripts/build_sysimage.jl
+          npm install -g semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/github conventional-changelog-conventionalcommits
       
       - name: Run semantic release
         id: semantic
