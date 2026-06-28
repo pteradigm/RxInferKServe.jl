@@ -38,6 +38,7 @@ Configuration settings for the RxInferKServe server.
 - `port::Int = 8080`: Server port number
 - `workers::Int = 1`: Number of worker processes
 - `log_level::String = "info"`: Logging level (debug, info, warn, error)
+- `configure_global_logger::Bool = false`: Opt in to configuring Julia's process-global logger
 - `enable_cors::Bool = true`: Enable CORS headers
 - `enable_auth::Bool = false`: Enable API key authentication
 - `api_keys::Vector{String} = String[]`: List of valid API keys
@@ -61,6 +62,7 @@ config = ServerConfig(
     port::Int = 8080
     workers::Int = 1
     log_level::String = "info"
+    configure_global_logger::Bool = false
     enable_cors::Bool = true
     enable_auth::Bool = false
     api_keys::Vector{String} = String[]
